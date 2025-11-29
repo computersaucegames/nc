@@ -4,6 +4,7 @@ var race_sim: RaceSimulator
 var race_log: RaceEventLog
 var pilot_status_panel: PilotStatusPanel
 var race_controls: RaceControls  # CHANGED: was pause_button, speed_slider, speed_label
+var circuit_display: CircuitDisplay  # CHANGED: New visual circuit display
 
 # Test circuit
 var test_circuit: Circuit
@@ -36,15 +37,20 @@ func setup_ui():
 	
 	main_vbox.add_child(HSeparator.new())
 	
-	# Race display split
+	# Race display split (3-way: status | circuit | log)
 	var split_container = HSplitContainer.new()
 	split_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	main_vbox.add_child(split_container)
-	
+
 	# Left side - Pilot status (CHANGED: Now uses PilotStatusPanel component)
 	pilot_status_panel = PilotStatusPanel.new()
 	split_container.add_child(pilot_status_panel)
-	
+
+	# Middle - Circuit visual display (CHANGED: New CircuitDisplay component)
+	var circuit_display_scene = preload("res://scenes/ui/CircuitDisplay.tscn")
+	circuit_display = circuit_display_scene.instantiate()
+	split_container.add_child(circuit_display)
+
 	# Right side - Event log (CHANGED: Now uses RaceEventLog component)
 	race_log = RaceEventLog.new()
 	split_container.add_child(race_log)
@@ -128,10 +134,14 @@ func setup_test_pilots():
 		{"name": "Frost", "twitch": 8, "craft": 6, "sync": 7, "edge": 5},
 		{"name": "Shadow", "twitch": 5, "craft": 8, "sync": 6, "edge": 7}
 	]
-	
+
 	# CHANGED: Use PilotStatusPanel to setup pilots
 	pilot_status_panel.setup_pilots(test_pilots)
 	pilot_status_panel.set_circuit(test_circuit)
+
+	# CHANGED: Setup circuit display with circuit and pilots
+	circuit_display.setup_circuit(test_circuit)
+	circuit_display.setup_pilots(test_pilots)
 
 func _on_start_pressed():
 	# CHANGED: Use race_log method instead of direct output_log calls
@@ -160,8 +170,9 @@ func _on_speed_changed(value: float):
 	race_sim.auto_advance_delay = value
 
 func update_pilot_displays():
-	# CHANGED: Now just delegates to PilotStatusPanel
+	# CHANGED: Update both status panel and circuit display
 	pilot_status_panel.update_all_pilots(race_sim.pilots)
+	circuit_display.update_all_pilots(race_sim.pilots)
 
 # Signal handlers - ALL CHANGED to use race_log methods
 func _on_race_started(circuit: Circuit, pilots: Array):
