@@ -1,59 +1,28 @@
 extends Control
 
+# Reference UI components from scene tree
+@onready var race_controls: RaceControls = $MarginContainer/VBoxContainer/RaceControls
+@onready var pilot_status_panel: PilotStatusPanel = $MarginContainer/VBoxContainer/ContentSplit/PilotStatusPanel
+@onready var circuit_display: CircuitDisplay = $MarginContainer/VBoxContainer/ContentSplit/CircuitDisplay
+@onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RaceEventLog
+
+# Race simulator (created programmatically)
 var race_sim: RaceSimulator
-var race_log: RaceEventLog
-var pilot_status_panel: PilotStatusPanel
-var race_controls: RaceControls  # CHANGED: was pause_button, speed_slider, speed_label
-var circuit_display: CircuitDisplay  # CHANGED: New visual circuit display
 
 # Test circuit
 var test_circuit: Circuit
 
 func _ready():
-	setup_ui()
+	setup_ui_connections()
 	setup_race_simulator()
 	create_test_circuit()
 	setup_test_pilots()
 
-func setup_ui():
-	var main_vbox = VBoxContainer.new()
-	main_vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(main_vbox)
-	
-	# Title
-	var title = Label.new()
-	title.text = "NEBULA CIRCUIT - Race Simulation"
-	title.add_theme_font_size_override("font_size", 24)
-	main_vbox.add_child(title)
-	
-	main_vbox.add_child(HSeparator.new())
-	
-	# Control panel (CHANGED: Now uses RaceControls component)
-	race_controls = RaceControls.new()
+func setup_ui_connections():
+	# Connect signals from UI components
 	race_controls.start_pressed.connect(_on_start_pressed)
 	race_controls.pause_pressed.connect(_on_pause_pressed)
 	race_controls.speed_changed.connect(_on_speed_changed)
-	main_vbox.add_child(race_controls)
-	
-	main_vbox.add_child(HSeparator.new())
-	
-	# Race display split (3-way: status | circuit | log)
-	var split_container = HSplitContainer.new()
-	split_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	main_vbox.add_child(split_container)
-
-	# Left side - Pilot status (CHANGED: Now uses PilotStatusPanel component)
-	pilot_status_panel = PilotStatusPanel.new()
-	split_container.add_child(pilot_status_panel)
-
-	# Middle - Circuit visual display (CHANGED: New CircuitDisplay component)
-	var circuit_display_scene = preload("res://scenes/ui/CircuitDisplay.tscn")
-	circuit_display = circuit_display_scene.instantiate()
-	split_container.add_child(circuit_display)
-
-	# Right side - Event log (CHANGED: Now uses RaceEventLog component)
-	race_log = RaceEventLog.new()
-	split_container.add_child(race_log)
 
 func setup_race_simulator():
 	race_sim = RaceSimulator.new()

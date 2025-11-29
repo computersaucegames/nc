@@ -1,7 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://dpr8gyat38aq1"]
+[gd_scene load_steps=6 format=3 uid="uid://dpr8gyat38aq1"]
 
 [ext_resource type="Script" uid="uid://dqlhsgpxnpccf" path="res://scripts/tests/RaceTestScene.gd" id="1_mxct0"]
-[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/testtrack.png" id="2_0bthm"]
+[ext_resource type="PackedScene" path="res://scenes/ui/RaceControls.tscn" id="2_controls"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PilotStatusPanel.tscn" id="3_status"]
+[ext_resource type="PackedScene" path="res://scenes/ui/CircuitDisplay.tscn" id="4_circuit"]
+[ext_resource type="PackedScene" path="res://scenes/ui/RaceEventLog.tscn" id="5_log"]
 
 [node name="RaceTestScene" type="Control"]
 layout_mode = 3
@@ -45,73 +48,22 @@ text = "Nebula Circuit Race Sim"
 [node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ControlsContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
+[node name="RaceControls" parent="MarginContainer/VBoxContainer" instance=ExtResource("2_controls")]
 layout_mode = 2
 
-[node name="StartButton" type="Button" parent="MarginContainer/VBoxContainer/ControlsContainer"]
-custom_minimum_size = Vector2(100, 0)
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Start Race"
-
-[node name="PauseButton" type="Button" parent="MarginContainer/VBoxContainer/ControlsContainer"]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-text = "Pause"
-
-[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ControlsContainer"]
-layout_mode = 2
-
-[node name="SpeedLabel" type="Label" parent="MarginContainer/VBoxContainer/ControlsContainer"]
-layout_mode = 2
-text = "Speed 1.0X"
-
-[node name="SpeedSlider" type="HSlider" parent="MarginContainer/VBoxContainer/ControlsContainer"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.1
-max_value = 3.0
-step = 0.1
-value = 1.0
 
 [node name="ContentSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
 
-[node name="LeftPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentSplit"]
+[node name="PilotStatusPanel" parent="MarginContainer/VBoxContainer/ContentSplit" instance=ExtResource("3_status")]
 layout_mode = 2
 
-[node name="PilotScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentSplit/LeftPanel"]
+[node name="CircuitDisplay" parent="MarginContainer/VBoxContainer/ContentSplit" instance=ExtResource("4_circuit")]
 layout_mode = 2
 
-[node name="PilotStatusContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentSplit/LeftPanel/PilotScrollContainer"]
+[node name="RaceEventLog" parent="MarginContainer/VBoxContainer/ContentSplit" instance=ExtResource("5_log")]
 layout_mode = 2
 
-[node name="RightPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentSplit"]
-layout_mode = 2
-
-[node name="LogScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentSplit/RightPanel"]
-layout_mode = 2
-
-[node name="LogText" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ContentSplit/RightPanel/LogScrollContainer"]
-layout_mode = 2
-focus_mode = 2
-bbcode_enabled = true
-scroll_following = true
-selection_enabled = true
-
-[node name="TrackPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentSplit"]
-layout_mode = 2
-
-[node name="Testtrack" type="Sprite2D" parent="MarginContainer/VBoxContainer/ContentSplit/TrackPanel"]
-position = Vector2(1403, 230)
-scale = Vector2(3, 3)
-texture = ExtResource("2_0bthm")
-
-[node name="S1L1" type="Marker2D" parent="MarginContainer/VBoxContainer/ContentSplit/TrackPanel/Testtrack"]
-position = Vector2(86, -69)
-
-[node name="HSeparator2" type="HSeparator" parent="MarginContainer"]
-layout_mode = 2
-
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ControlsContainer/StartButton" to="." method="_on_start_pressed"]
