@@ -24,6 +24,8 @@ var total_circuit_length: int = 0
 # Pilot icon scene to instantiate (can be customized)
 const PILOT_ICON_SIZE = 16
 const MOVEMENT_ANIMATION_DURATION = 0.3  # Seconds for smooth pod movement
+const OVERLAP_THRESHOLD = 0.02  # How close pilots need to be to count as overlapping (2% of track)
+const LATERAL_OFFSET_DISTANCE = 20.0  # Pixels to offset sideways when overlapping
 
 # Pod racer sprites for pilot icons
 const POD_SPRITES = [
@@ -74,8 +76,8 @@ func _generate_default_path():
 	var radius_y = 120
 	var points = 32
 
-	for i in range(points + 1):
-		var angle = (float(i) / points) * TAU
+	for pt_idx in range(points + 1):
+		var angle = (float(pt_idx) / points) * TAU
 		var point = center + Vector2(
 			cos(angle) * radius_x,
 			sin(angle) * radius_y
@@ -93,19 +95,19 @@ func setup_pilots(pilot_data: Array):
 	pilot_tweens.clear()
 
 	# Create a PathFollow2D for each pilot
-	for i in range(pilot_data.size()):
-		var pilot = pilot_data[i]
+	for p_idx in range(pilot_data.size()):
+		var pilot = pilot_data[p_idx]
 		var path_follow = PathFollow2D.new()
 		path_follow.rotates = false  # Keep icons upright
 		path_follow.loop = true
 
 		# Create visual marker (pod racer sprite)
-		var icon = _create_pilot_icon(i, pilot.get("name", "Pilot %d" % i))
+		var icon = _create_pilot_icon(p_idx, pilot.get("name", "Pilot %d" % p_idx))
 		path_follow.add_child(icon)
 
 		track_path.add_child(path_follow)
-		pilot_markers[i] = path_follow
-		print("DEBUG: Created marker for pilot %d (%s)" % [i, pilot.get("name", "Unknown")])
+		pilot_markers[p_idx] = path_follow
+		print("DEBUG: Created marker for pilot %d (%s)" % [p_idx, pilot.get("name", "Unknown")])
 
 ## Create a pod racer sprite icon for a pilot
 func _create_pilot_icon(pilot_index: int, pilot_name: String) -> Node2D:
@@ -178,23 +180,27 @@ func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int,
 
 ## Update all pilots from an array of PilotState objects
 func update_all_pilots(pilots: Array):
-	for i in range(pilots.size()):
-		var pilot = pilots[i]
+	# First, update all pilot positions
+	for pilot_idx in range(pilots.size()):
+		var pilot = pilots[pilot_idx]
 		update_pilot_position(
-			i,
+			pilot_idx,
 			pilot.current_lap,
 			pilot.current_sector,
 			pilot.gap_in_sector
 		)
+
+	# Then, apply lateral offsets for overlapping pilots
+	_apply_overlap_offsets()
 
 ## Calculate the total gap position from start of circuit
 func _calculate_total_gap_position(sector_index: int, gap_in_sector: int) -> int:
 	var total_gap = 0
 
 	# Add up all previous sectors
-	for i in range(sector_index):
-		if i < circuit.sectors.size():
-			total_gap += circuit.sectors[i].length_in_gap
+	for sect_idx in range(sector_index):
+		if sect_idx < circuit.sectors.size():
+			total_gap += circuit.sectors[sect_idx].length_in_gap
 
 	# Add current position in sector
 	total_gap += gap_in_sector
@@ -205,3 +211,65 @@ func _calculate_total_gap_position(sector_index: int, gap_in_sector: int) -> int
 func get_sector_start_ratio(sector_index: int) -> float:
 	var gap_position = _calculate_total_gap_position(sector_index, 0)
 	return float(gap_position) / float(total_circuit_length)
+
+## Detect overlapping pilots and apply lateral offsets
+func _apply_overlap_offsets():
+	var pilot_positions = []
+
+	# Collect all pilot positions
+	for pilot_id in pilot_markers.keys():
+		var path_follow = pilot_markers[pilot_id]
+		pilot_positions.append({
+			"id": pilot_id,
+			"progress": path_follow.progress_ratio,
+			"marker": path_follow
+		})
+
+	# Sort by progress
+	pilot_positions.sort_custom(func(a, b): return a.progress < b.progress)
+
+	# Detect groups of overlapping pilots
+	var groups = []
+	var current_group = []
+
+	for pos_idx in range(pilot_positions.size()):
+		if current_group.is_empty():
+			current_group.append(pilot_positions[pos_idx])
+		else:
+			var last_pilot = current_group[-1]
+			if abs(pilot_positions[pos_idx].progress - last_pilot.progress) < OVERLAP_THRESHOLD:
+				# Overlapping - add to current group
+				current_group.append(pilot_positions[pos_idx])
+			else:
+				# Not overlapping - finish current group and start new one
+				if current_group.size() > 1:
+					groups.append(current_group)
+				current_group = [pilot_positions[pos_idx]]
+
+	# Don't forget the last group
+	if current_group.size() > 1:
+		groups.append(current_group)
+
+	# Reset all offsets first
+	for pilot_id in pilot_markers.keys():
+		var icon = pilot_markers[pilot_id].get_child(0)
+		if icon:
+			icon.position.x = 0
+
+	# Apply offsets to overlapping groups
+	for group in groups:
+		var num_pilots = group.size()
+		for group_idx in range(num_pilots):
+			var offset = _calculate_lateral_offset(group_idx, num_pilots)
+			var icon = group[group_idx].marker.get_child(0)
+			if icon:
+				icon.position.x = offset
+
+## Calculate lateral offset for pilot in overlapping group
+func _calculate_lateral_offset(index: int, total: int) -> float:
+	# Center the group around 0
+	# For 2 pilots: -10, +10
+	# For 3 pilots: -20, 0, +20
+	# For 4 pilots: -30, -10, +10, +30
+	var half_width = (total - 1) * LATERAL_OFFSET_DISTANCE / 2.0
+	return (index * LATERAL_OFFSET_DISTANCE) - half_width
