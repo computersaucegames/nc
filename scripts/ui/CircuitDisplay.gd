@@ -18,10 +18,12 @@ class_name CircuitDisplay
 
 var circuit: Circuit
 var pilot_markers: Dictionary = {}  # pilot_id -> PathFollow2D
+var pilot_tweens: Dictionary = {}   # pilot_id -> Tween (for smooth animation)
 var total_circuit_length: int = 0
 
 # Pilot icon scene to instantiate (can be customized)
 const PILOT_ICON_SIZE = 16
+const MOVEMENT_ANIMATION_DURATION = 0.3  # Seconds for smooth pod movement
 
 # Pod racer sprites for pilot icons
 const POD_SPRITES = [
@@ -84,10 +86,11 @@ func _generate_default_path():
 func setup_pilots(pilot_data: Array):
 	print("DEBUG: Setting up %d pilots" % pilot_data.size())
 
-	# Clear existing markers
+	# Clear existing markers and tweens
 	for marker in pilot_markers.values():
 		marker.queue_free()
 	pilot_markers.clear()
+	pilot_tweens.clear()
 
 	# Create a PathFollow2D for each pilot
 	for i in range(pilot_data.size()):
@@ -156,9 +159,19 @@ func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int,
 	# Clamp to valid range
 	progress_ratio = clamp(progress_ratio, 0.0, 1.0)
 
-	# Update the PathFollow2D position
+	# Update the PathFollow2D position with smooth animation
 	var path_follow: PathFollow2D = pilot_markers[pilot_id]
-	path_follow.progress_ratio = progress_ratio
+
+	# Kill existing tween if running to avoid conflicts
+	if pilot_tweens.has(pilot_id) and pilot_tweens[pilot_id]:
+		pilot_tweens[pilot_id].kill()
+
+	# Create smooth tween animation to new position
+	var tween = create_tween()
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(path_follow, "progress_ratio", progress_ratio, MOVEMENT_ANIMATION_DURATION)
+	pilot_tweens[pilot_id] = tween
 
 	print("DEBUG: Pilot %d - Sector: %d, Gap: %d, Progress: %.2f (Total gap: %d/%d)" %
 		[pilot_id, current_sector, gap_in_sector, progress_ratio, progress_gap, total_circuit_length])
