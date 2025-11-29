@@ -1,11 +1,12 @@
 [gd_scene load_steps=3 format=3 uid="uid://c8vx3q2n1h4yk"]
 
-[ext_resource type="Script" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
-[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/testtrack.png" id="2_track"]
+[ext_resource type="Script" uid="uid://ce4vxyse61vfk" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
+[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/pizza_triangle_placeholder.png" id="2_track"]
 
-[node name="CircuitDisplay" type="Control"]
+[node name="CircuitDisplay2" type="Control"]
 custom_minimum_size = Vector2(400, 300)
-layout_mode = 2
+layout_mode = 3
+anchors_preset = 0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_circuit")
@@ -21,14 +22,11 @@ texture = ExtResource("2_track")
 
 [node name="Sector1Start" type="Marker2D" parent="SectorMarkers"]
 position = Vector2(150, 256)
-gizmo_extents = 10.0
 
 [node name="Sector2Start" type="Marker2D" parent="SectorMarkers"]
 position = Vector2(362, 256)
-gizmo_extents = 10.0
 
 [node name="Sector3Start" type="Marker2D" parent="SectorMarkers"]
 position = Vector2(362, 150)
-gizmo_extents = 10.0
 
 [node name="PilotContainer" type="Node2D" parent="."]

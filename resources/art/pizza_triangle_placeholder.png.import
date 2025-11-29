@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://mjsuo7xkgrar"
-path="res://.godot/imported/pizza_triangle_placeholder.png-placeholder123.ctex"
+path="res://.godot/imported/pizza_triangle_placeholder.png-7f91e669475ac7e1485751ec3a807750.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://resources/art/pizza_triangle_placeholder.png"
-dest_files=["res://.godot/imported/pizza_triangle_placeholder.png-placeholder123.ctex"]
+dest_files=["res://.godot/imported/pizza_triangle_placeholder.png-7f91e669475ac7e1485751ec3a807750.ctex"]
 
 [params]
 
