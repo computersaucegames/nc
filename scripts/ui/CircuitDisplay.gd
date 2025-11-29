@@ -22,15 +22,25 @@ var total_circuit_length: int = 0
 
 # Pilot icon scene to instantiate (can be customized)
 const PILOT_ICON_SIZE = 16
+
+# Pod racer sprites for pilot icons
+const POD_SPRITES = [
+	"res://resources/art/classic-Recovered.png",
+	"res://resources/art/bigblue-Recovered.png",
+	"res://resources/art/3 wide-Recovered.png",
+	"res://resources/art/pod-Recovered.png",
+]
+
+# Colors to modulate pods (for pilots beyond 4)
 const PILOT_COLORS = [
-	Color.GOLD,           # 1st place
-	Color.SILVER,         # 2nd place
-	Color.ORANGE,         # 3rd place
-	Color.CORNFLOWER_BLUE, # 4th place
-	Color.HOT_PINK,       # 5th place
-	Color.LAWN_GREEN,     # 6th place
-	Color.PURPLE,         # 7th place
-	Color.CYAN            # 8th place
+	Color.WHITE,          # 1st - classic (red)
+	Color.WHITE,          # 2nd - bigblue (blue)
+	Color.WHITE,          # 3rd - 3 wide (red/orange)
+	Color.WHITE,          # 4th - pod (yellow)
+	Color.HOT_PINK,       # 5th - classic + pink tint
+	Color.LAWN_GREEN,     # 6th - bigblue + green tint
+	Color.PURPLE,         # 7th - 3 wide + purple tint
+	Color.CYAN            # 8th - pod + cyan tint
 ]
 
 func _ready():
@@ -40,12 +50,16 @@ func _ready():
 func setup_circuit(p_circuit: Circuit):
 	circuit = p_circuit
 	total_circuit_length = circuit.get_total_length()
+	print("DEBUG: Circuit setup - %s, Total length: %d" % [circuit.circuit_name, total_circuit_length])
 
 	# Note: The Path2D curve should be set up in the editor
 	# or you can generate it programmatically here if needed
 	if track_path.curve == null:
+		print("DEBUG: No curve found, generating default path")
 		track_path.curve = Curve2D.new()
 		_generate_default_path()
+	else:
+		print("DEBUG: Curve exists, length: %.2f" % track_path.curve.get_baked_length())
 
 ## Generate a default circular path (fallback if not set in editor)
 func _generate_default_path():
@@ -68,6 +82,8 @@ func _generate_default_path():
 
 ## Setup pilots on the track
 func setup_pilots(pilot_data: Array):
+	print("DEBUG: Setting up %d pilots" % pilot_data.size())
+
 	# Clear existing markers
 	for marker in pilot_markers.values():
 		marker.queue_free()
@@ -80,53 +96,41 @@ func setup_pilots(pilot_data: Array):
 		path_follow.rotates = false  # Keep icons upright
 		path_follow.loop = true
 
-		# Create visual marker (colored circle)
+		# Create visual marker (pod racer sprite)
 		var icon = _create_pilot_icon(i, pilot.get("name", "Pilot %d" % i))
 		path_follow.add_child(icon)
 
 		track_path.add_child(path_follow)
 		pilot_markers[i] = path_follow
+		print("DEBUG: Created marker for pilot %d (%s)" % [i, pilot.get("name", "Unknown")])
 
-## Create a simple colored circle icon for a pilot using draw calls
-func _create_pilot_icon(pilot_index: int, pilot_name: String) -> Control:
-	var icon = Control.new()
-	icon.custom_minimum_size = Vector2(PILOT_ICON_SIZE * 2, PILOT_ICON_SIZE * 2)
-	icon.set_anchors_preset(Control.PRESET_CENTER)
-	icon.position = Vector2(-PILOT_ICON_SIZE, -PILOT_ICON_SIZE)
+## Create a pod racer sprite icon for a pilot
+func _create_pilot_icon(pilot_index: int, pilot_name: String) -> Node2D:
+	var container = Node2D.new()
 
-	# Use a simple colored panel
-	var panel = Panel.new()
-	panel.custom_minimum_size = Vector2(PILOT_ICON_SIZE, PILOT_ICON_SIZE)
-	panel.size = Vector2(PILOT_ICON_SIZE, PILOT_ICON_SIZE)
-	panel.position = Vector2(0, 0)
+	# Load the pod sprite
+	var sprite = Sprite2D.new()
+	var pod_index = pilot_index % POD_SPRITES.size()
+	sprite.texture = load(POD_SPRITES[pod_index])
+	sprite.modulate = PILOT_COLORS[pilot_index % PILOT_COLORS.size()]
 
-	# Create a StyleBox for colored background
-	var style = StyleBoxFlat.new()
-	style.bg_color = PILOT_COLORS[pilot_index % PILOT_COLORS.size()]
-	style.border_color = Color.WHITE
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = PILOT_ICON_SIZE / 2
-	style.corner_radius_top_right = PILOT_ICON_SIZE / 2
-	style.corner_radius_bottom_left = PILOT_ICON_SIZE / 2
-	style.corner_radius_bottom_right = PILOT_ICON_SIZE / 2
-	panel.add_theme_stylebox_override("panel", style)
+	# Scale up the sprite (adjust as needed for visibility)
+	sprite.scale = Vector2(2.0, 2.0)
+
+	container.add_child(sprite)
 
 	# Label with position number
 	var label = Label.new()
 	label.text = str(pilot_index + 1)
-	label.position = Vector2(PILOT_ICON_SIZE + 4, 0)
+	label.position = Vector2(12, -8)  # Position next to sprite
 	label.add_theme_color_override("font_color", Color.WHITE)
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
-	label.add_theme_constant_override("outline_size", 2)
+	label.add_theme_constant_override("outline_size", 3)
 
-	icon.add_child(panel)
-	icon.add_child(label)
+	container.add_child(label)
 
-	return icon
+	return container
 
 ## Update a single pilot's position on the track
 ## Parameters:
@@ -136,9 +140,11 @@ func _create_pilot_icon(pilot_index: int, pilot_name: String) -> Control:
 ##   gap_in_sector: Progress within the current sector (0 to sector.length_in_gap)
 func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int, gap_in_sector: int):
 	if not pilot_markers.has(pilot_id):
+		print("WARNING: Pilot %d not found in pilot_markers" % pilot_id)
 		return
 
 	if total_circuit_length == 0:
+		print("WARNING: total_circuit_length is 0!")
 		return
 
 	# Calculate total progress along the circuit
@@ -153,6 +159,9 @@ func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int,
 	# Update the PathFollow2D position
 	var path_follow: PathFollow2D = pilot_markers[pilot_id]
 	path_follow.progress_ratio = progress_ratio
+
+	print("DEBUG: Pilot %d - Sector: %d, Gap: %d, Progress: %.2f (Total gap: %d/%d)" %
+		[pilot_id, current_sector, gap_in_sector, progress_ratio, progress_gap, total_circuit_length])
 
 ## Update all pilots from an array of PilotState objects
 func update_all_pilots(pilots: Array):
