@@ -40,7 +40,7 @@ const PILOT_COLORS = [
 	Color.WHITE,          # 1st - classic (red)
 	Color.WHITE,          # 2nd - bigblue (blue)
 	Color.WHITE,          # 3rd - 3 wide (red/orange)
-	Color.WHITE,          # 4th - pod (yellow)
+	Color.CORAL,          # 4th - pod (yellow) with coral tint to stand out
 	Color.HOT_PINK,       # 5th - classic + pink tint
 	Color.LAWN_GREEN,     # 6th - bigblue + green tint
 	Color.PURPLE,         # 7th - 3 wide + purple tint
