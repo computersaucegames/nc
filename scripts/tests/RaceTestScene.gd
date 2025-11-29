@@ -3,8 +3,8 @@ extends Control
 # Reference UI components from scene tree
 @onready var race_controls: RaceControls = $MarginContainer/VBoxContainer/RaceControls
 @onready var pilot_status_panel: PilotStatusPanel = $MarginContainer/VBoxContainer/ContentSplit/PilotStatusPanel
-@onready var circuit_display: CircuitDisplay = $MarginContainer/VBoxContainer/ContentSplit/CircuitDisplay
-@onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RaceEventLog
+@onready var circuit_display: CircuitDisplay = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/CircuitDisplay
+@onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/RaceEventLog
 
 # Race simulator (created programmatically)
 var race_sim: RaceSimulator
