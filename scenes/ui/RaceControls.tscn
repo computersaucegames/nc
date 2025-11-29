@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://race_controls"]
+
+[ext_resource type="Script" path="res://scripts/ui/RaceControls.gd" id="1"]
+
+[node name="RaceControls" type="HBoxContainer"]
+offset_right = 400.0
+offset_bottom = 40.0
+script = ExtResource("1")

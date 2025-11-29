@@ -1,0 +1,2179 @@
+<?xml version='1.0' encoding='utf-8'?>
+<documents>
+  <document index="1">
+    <source>scripts\autoload\DiceSystem.gd</source>
+    <document_content># DiceSystem.gd
+# Autoload this as "Dice" for global access
+extends Node
+
+signal roll_complete(result: DiceResult)
+signal tier_achieved(tier: String, roll_data: DiceResult)
+
+# The four-tier outcome levels
+enum Tier {
+	RED,    # Critical Failure
+	GREY,   # Mixed Success  
+	GREEN,  # Success
+	PURPLE  # Critical Success
+}
+
+# Different types of roll modifications that badges can apply
+enum ModType {
+	FLAT_BONUS,      # Simple +X to roll
+	ADVANTAGE,       # Roll twice, take best
+	DISADVANTAGE,    # Roll twice, take worst
+	STAT_REPLACE,    # Use different stat
+	REROLL_ONES,     # Reroll any 1s once
+	MIN_TIER,        # Can't roll below a certain tier
+	TIER_SHIFT,      # Shift result up/down one tier
+}
+
+# Roll modifier that can be applied by badges, relationships, etc
+class RollModifier:
+	var source: String = ""  # Where this came from (badge name, relationship, etc)
+	var type: ModType
+	var value: Variant  # Could be int for bonus, String for stat name, etc
+	var description: String = ""
+	
+	func _init(mod_type: ModType, mod_value: Variant = 0, mod_source: String = ""):
+		type = mod_type
+		value = mod_value
+		source = mod_source
+
+# Dice result object containing all roll information
+class DiceResult:
+	var base_roll: int = 0           # The actual d20 roll
+	var stat_value: int = 0          # The stat being used
+	var stat_name: String = ""       # Which stat was used
+	var flat_modifiers: int = 0      # Sum of all flat bonuses
+	var final_total: int = 0         # base_roll + stat + modifiers
+	
+	var tier: Tier
+	var tier_name: String
+	
+	var gates: Dictionary = {}       # The thresholds used
+	var modifiers_applied: Array[String] = []  # List of what affected the roll
+	var roll_log: Array[String] = [] # Detailed log of the roll process
+	
+	var context: Dictionary = {}     # Additional context (who rolled, sector, etc)
+	
+	func get_tier_color() -&gt; Color:
+		match tier:
+			Tier.RED: return Color.RED
+			Tier.GREY: return Color.GRAY
+			Tier.GREEN: return Color.GREEN
+			Tier.PURPLE: return Color.PURPLE
+		return Color.WHITE
+	
+	func get_summary() -&gt; String:
+		return "%s (%d) = d20(%d) + %s(%d) + modifiers(%d)" % [
+			tier_name, final_total, base_roll, stat_name, stat_value, flat_modifiers
+		]
+
+# Standard gate thresholds
+const DEFAULT_GATES = {
+	"grey": 10,   # Roll 10+ to avoid RED
+	"green": 15,  # Roll 15+ for GREEN
+	"purple": 20  # Roll 20+ for PURPLE
+}
+
+# Make a d20 roll with stat and modifiers
+func roll_d20(
+	stat_value: int,
+	stat_name: String = "stat",
+	modifiers: Array = [],  # Changed from Array[RollModifier]
+	gates: Dictionary = DEFAULT_GATES,
+	context: Dictionary = {}
+) -&gt; DiceResult:
+	
+	var result = DiceResult.new()
+	result.stat_value = stat_value
+	result.stat_name = stat_name
+	result.gates = gates
+	result.context = context
+	
+	# Track what stat we're actually using (can be changed by modifiers)
+	var active_stat_value = stat_value
+	var active_stat_name = stat_name
+	
+	# Check for stat replacement modifiers first
+	for mod in modifiers:
+		if mod.type == ModType.STAT_REPLACE:
+			# mod.value should be a dictionary with "stat_name" and "stat_value"
+			if mod.value is Dictionary:
+				active_stat_name = mod.value.get("stat_name", stat_name)
+				active_stat_value = mod.value.get("stat_value", stat_value)
+				result.modifiers_applied.append("Using %s instead of %s" % [active_stat_name, stat_name])
+				result.roll_log.append("Stat replaced: %s(%d) -&gt; %s(%d)" % [
+					stat_name, stat_value, active_stat_name, active_stat_value
+				])
+	
+	# Check for advantage/disadvantage
+	var has_advantage = false
+	var has_disadvantage = false
+	for mod in modifiers:
+		if mod.type == ModType.ADVANTAGE:
+			has_advantage = true
+			result.modifiers_applied.append("Advantage from %s" % mod.source)
+		elif mod.type == ModType.DISADVANTAGE:
+			has_disadvantage = true
+			result.modifiers_applied.append("Disadvantage from %s" % mod.source)
+	
+	# Make the actual roll(s)
+	var roll1 = randi_range(1, 20)
+	var roll2 = 0
+	
+	if has_advantage and not has_disadvantage:
+		roll2 = randi_range(1, 20)
+		result.base_roll = max(roll1, roll2)
+		result.roll_log.append("Rolled with advantage: %d and %d, taking %d" % [roll1, roll2, result.base_roll])
+	elif has_disadvantage and not has_advantage:
+		roll2 = randi_range(1, 20)
+		result.base_roll = min(roll1, roll2)
+		result.roll_log.append("Rolled with disadvantage: %d and %d, taking %d" % [roll1, roll2, result.base_roll])
+	else:
+		# Normal roll or advantage+disadvantage cancel out
+		result.base_roll = roll1
+		if has_advantage and has_disadvantage:
+			result.roll_log.append("Advantage and disadvantage cancel out")
+		result.roll_log.append("Rolled: %d" % result.base_roll)
+	
+	# Apply reroll ones if present
+	for mod in modifiers:
+		if mod.type == ModType.REROLL_ONES and result.base_roll == 1:
+			var new_roll = randi_range(1, 20)
+			result.roll_log.append("Rerolled 1, got %d" % new_roll)
+			result.base_roll = new_roll
+			result.modifiers_applied.append("Rerolled 1 from %s" % mod.source)
+			break  # Only reroll once
+	
+	# Calculate flat bonuses
+	var flat_bonus = 0
+	for mod in modifiers:
+		if mod.type == ModType.FLAT_BONUS:
+			flat_bonus += mod.value as int
+			result.modifiers_applied.append("+%d from %s" % [mod.value, mod.source])
+	
+	# Calculate final total
+	result.stat_value = active_stat_value
+	result.stat_name = active_stat_name
+	result.flat_modifiers = flat_bonus
+	result.final_total = result.base_roll + active_stat_value + flat_bonus
+	
+	# Determine base tier from gates
+	if result.final_total &lt; gates.get("grey", DEFAULT_GATES["grey"]):
+		result.tier = Tier.RED
+		result.tier_name = "RED"
+	elif result.final_total &lt; gates.get("green", DEFAULT_GATES["green"]):
+		result.tier = Tier.GREY
+		result.tier_name = "GREY"
+	elif result.final_total &lt; gates.get("purple", DEFAULT_GATES["purple"]):
+		result.tier = Tier.GREEN
+		result.tier_name = "GREEN"
+	else:
+		result.tier = Tier.PURPLE
+		result.tier_name = "PURPLE"
+	
+	# Apply tier modifications (min tier, tier shift)
+	for mod in modifiers:
+		if mod.type == ModType.MIN_TIER:
+			var min_tier = mod.value as Tier
+			if result.tier &lt; min_tier:
+				result.tier = min_tier
+				result.tier_name = Tier.keys()[min_tier]
+				result.modifiers_applied.append("Minimum tier %s from %s" % [result.tier_name, mod.source])
+		elif mod.type == ModType.TIER_SHIFT:
+			var shift = mod.value as int
+			var new_tier_value = clampi(result.tier + shift, Tier.RED, Tier.PURPLE)
+			result.tier = new_tier_value as Tier
+			result.tier_name = Tier.keys()[new_tier_value]
+			var shift_dir = "up" if shift &gt; 0 else "down"
+			result.modifiers_applied.append("Tier shifted %s by %s" % [shift_dir, mod.source])
+	
+	result.roll_log.append("Final: %d = %d(d20) + %d(%s) + %d(modifiers)" % [
+		result.final_total, result.base_roll, active_stat_value, active_stat_name, flat_bonus
+	])
+	result.roll_log.append("Result: %s" % result.tier_name)
+	
+	# Emit signals
+	roll_complete.emit(result)
+	tier_achieved.emit(result.tier_name, result)
+	
+	return result
+
+# Simplified helper for basic rolls
+func quick_roll(stat_value: int, stat_name: String = "stat") -&gt; DiceResult:
+	return roll_d20(stat_value, stat_name)
+
+# Helper to create common modifiers
+func create_advantage(source: String = "unknown") -&gt; RollModifier:
+	return RollModifier.new(ModType.ADVANTAGE, true, source)
+
+func create_disadvantage(source: String = "unknown") -&gt; RollModifier:
+	return RollModifier.new(ModType.DISADVANTAGE, true, source)
+
+func create_bonus(amount: int, source: String = "unknown") -&gt; RollModifier:
+	return RollModifier.new(ModType.FLAT_BONUS, amount, source)
+
+func create_stat_replacement(new_stat_name: String, new_stat_value: int, source: String = "unknown") -&gt; RollModifier:
+	return RollModifier.new(
+		ModType.STAT_REPLACE, 
+		{"stat_name": new_stat_name, "stat_value": new_stat_value},
+		source
+	)
+</document_content>
+  </document>
+  <document index="2">
+    <source>scripts\autoload\events.gd</source>
+    <document_content>extends Node
+# Central signal hub to prevent tight coupling
+
+signal race_started(circuit: Circuit)
+signal sector_completed(fin: Resource, sector: Sector, result: String)
+signal race_finished(results: Array)
+signal fin_rolled_check(fin: Resource, roll: int, result: String)
+</document_content>
+  </document>
+  <document index="3">
+    <source>scripts\autoload\globals.gd</source>
+    <document_content>extends Node
+# Persistent game data
+
+var current_season: int = 1
+var current_race: int = 1
+var player_team: Resource  # Will be Team resource later
+var all_circuits: Array[Circuit] = []
+var all_fins: Array[Resource] = []
+</document_content>
+  </document>
+  <document index="4">
+    <source>scripts\resources\circuit.gd</source>
+    <document_content>
+# Circuit.gd
+extends Resource
+class_name Circuit
+
+@export var circuit_name: String = "Unnamed Circuit"
+@export var country: String = ""
+@export var total_laps: int = 3
+@export var sectors: Array[Sector] = []
+
+func get_total_length() -&gt; int:
+	var total: int = 0
+	for sector in sectors:
+		total += sector.length_in_gap
+	return total
+
+func get_sector_count() -&gt; int:
+	return sectors.size()
+
+func get_lap_length() -&gt; int:
+	return get_total_length()
+
+func get_race_length() -&gt; int:
+	return get_total_length() * total_laps
+
+
+# Example of creating a circuit in code or inspector:
+func create_example_circuit() -&gt; Circuit:
+	var circuit = Circuit.new()
+	circuit.circuit_name = "Monaco Street Circuit"
+	circuit.country = "Monaco"
+	circuit.total_laps = 5
+	
+	# Sector 1: Tight corners
+	var sector1 = Sector.new()
+	sector1.sector_name = "Harbor Chicane"
+	sector1.length_in_gap = 4
+	sector1.grey_threshold = 6
+	sector1.green_threshold = 11
+	sector1.purple_threshold = 16
+	sector1.red_movement = 1
+	sector1.grey_movement = 2
+	sector1.green_movement = 3
+	sector1.purple_movement = 4
+	
+	# Sector 2: Long straight
+	var sector2 = Sector.new()
+	sector2.sector_name = "Tunnel Run"
+	sector2.length_in_gap = 6
+	sector2.grey_threshold = 4
+	sector2.green_threshold = 8
+	sector2.purple_threshold = 14
+	sector2.red_movement = 1
+	sector2.grey_movement = 3
+	sector2.green_movement = 4
+	sector2.purple_movement = 5
+	
+	# Sector 3: Technical section
+	var sector3 = Sector.new()
+	sector3.sector_name = "Casino Square"
+	sector3.length_in_gap = 5
+	sector3.grey_threshold = 7
+	sector3.green_threshold = 12
+	sector3.purple_threshold = 17
+	sector3.red_movement = 0
+	sector3.grey_movement = 2
+	sector3.green_movement = 3
+	sector3.purple_movement = 4
+	
+	circuit.sectors = [sector1, sector2, sector3]
+	return circuit
+</document_content>
+  </document>
+  <document index="5">
+    <source>scripts\resources\fin.gd</source>
+    <document_content>extends Node
+</document_content>
+  </document>
+  <document index="6">
+    <source>scripts\resources\sector.gd</source>
+    <document_content># Sector.gd
+extends Resource
+class_name Sector
+
+@export var sector_name: String = "Unnamed Sector"
+@export var length_in_gap: int = 5  # Total distance of this sector
+@export var carrythru: int = 2  # Max excess Gap that can transfer to next sector
+@export var check_type: String = "speed"  # For now just one stat
+@export var is_start_sector: bool = false  # Is this where the race starts?
+
+# Gate thresholds - the roll must meet or exceed these values
+@export_group("Gate Thresholds")
+@export var grey_threshold: int = 5   # Below this = Red (failure)
+@export var green_threshold: int = 10  # Grey to Green
+@export var purple_threshold: int = 15 # Green to Purple (crit)
+
+# Movement rewards based on result (in Gap units)
+@export_group("Movement Rewards")
+@export var red_movement: int = 1    # Failure - minimal progress
+@export var grey_movement: int = 2   # Neutral - slow progress  
+@export var green_movement: int = 3  # Success - good progress
+@export var purple_movement: int = 4 # Critical - maximum progress
+
+# Optional: Specific failure consequences for this sector
+@export var failure_table: Array[String] = [
+	"Spin out - lose 1 Gap",
+	"Lock up brakes - lose 2 Gap", 
+	"Wide line - no penalty"
+]
+
+func get_movement_for_roll(roll_value: int) -&gt; int:
+	if roll_value &lt; grey_threshold:
+		return red_movement
+	elif roll_value &lt; green_threshold:
+		return grey_movement
+	elif roll_value &lt; purple_threshold:
+		return green_movement
+	else:
+		return purple_movement
+
+func get_result_type(roll_value: int) -&gt; String:
+	if roll_value &lt; grey_threshold:
+		return "RED"
+	elif roll_value &lt; green_threshold:
+		return "GREY"
+	elif roll_value &lt; purple_threshold:
+		return "GREEN"
+	else:
+		return "PURPLE"
+
+func get_random_failure_consequence() -&gt; String:
+	if failure_table.is_empty():
+		return "Generic failure"
+	return failure_table.pick_random()
+</document_content>
+  </document>
+  <document index="7">
+    <source>scripts\systems\MovementProcessor.gd</source>
+    <document_content># MovementProcessor.gd
+extends RefCounted
+class_name MovementProcessor
+
+# Handles all movement application, sector completion, and lap counting
+# This class is responsible ONLY for moving pilots through the track
+
+# Result of movement processing
+class MovementResult:
+	var final_movement: int = 0
+	var sectors_completed: Array = []  # List of completed sectors
+	var lap_completed: bool = false
+	var new_lap_number: int = 0
+	var race_finished: bool = false
+	
+# Calculate base movement from a dice roll result
+static func calculate_base_movement(sector: Sector, roll_result: Dice.DiceResult) -&gt; int:
+	return sector.get_movement_for_roll(roll_result.final_total)
+
+# Apply movement to a pilot, handling sector and lap completion
+static func apply_movement(
+	pilot: PilotState, 
+	movement: int, 
+	circuit: Circuit
+) -&gt; MovementResult:
+	
+	var result = MovementResult.new()
+	result.final_movement = movement
+	
+	# Calculate new position
+	var new_gap = pilot.gap_in_sector + movement
+	var current_sector = circuit.sectors[pilot.current_sector]
+	
+	# Check if we complete the current sector
+	while new_gap &gt;= current_sector.length_in_gap:
+		# Complete this sector
+		result.sectors_completed.append(current_sector)
+		
+		# Calculate excess and apply carrythru
+		var excess = new_gap - current_sector.length_in_gap
+		excess = min(excess, current_sector.carrythru)
+		
+		# Move to next sector
+		pilot.current_sector += 1
+		
+		# Check for lap completion
+		if pilot.current_sector &gt;= circuit.sectors.size():
+			pilot.current_sector = 0
+			pilot.current_lap += 1
+			result.lap_completed = true
+			result.new_lap_number = pilot.current_lap
+			
+			# Check if race is finished for this pilot
+			if pilot.current_lap &gt; circuit.total_laps:
+				result.race_finished = true
+				break
+		
+		# Set position in new sector
+		new_gap = excess
+		
+		# Get the new current sector for next iteration
+		if pilot.current_sector &lt; circuit.sectors.size():
+			current_sector = circuit.sectors[pilot.current_sector]
+		else:
+			break  # Safety check
+	
+	# Apply final gap position
+	pilot.gap_in_sector = new_gap
+	
+	# Update total distance
+	pilot.total_distance += movement
+	
+	return result
+
+# Process movement with overtake adjustments
+static func apply_movement_with_overtakes(
+	pilot: PilotState,
+	base_movement: int,
+	overtake_chain_result: Dictionary,  # From OvertakeResolver
+	circuit: Circuit
+) -&gt; MovementResult:
+	
+	# Use adjusted movement from overtake resolution
+	var final_movement = overtake_chain_result.get("final_movement", base_movement)
+	
+	# Apply the movement
+	return apply_movement(pilot, final_movement, circuit)
+
+# Calculate grid positions for race start
+static func setup_grid_positions(pilots: Array, start_sector_index: int = 0) -&gt; void:
+	for i in range(pilots.size()):
+		var pilot = pilots[i]
+		pilot.position = i + 1
+		pilot.current_sector = start_sector_index
+		pilot.gap_in_sector = -(i)  # Grid positions: 0, -1, -2, -3, etc.
+		pilot.current_lap = 1
+		pilot.total_distance = -(i)  # Negative to reflect grid position
+
+# Apply race start bonuses
+static func apply_start_bonus(pilot: PilotState, start_roll: Dice.DiceResult) -&gt; Dictionary:
+	var effects = {
+		"bonus_applied": false,
+		"disadvantage_next": false,
+		"description": ""
+	}
+	
+	match start_roll.tier:
+		Dice.Tier.PURPLE:
+			# Excellent start - gain 1 Gap
+			pilot.gap_in_sector += 1
+			pilot.total_distance += 1
+			effects.bonus_applied = true
+			effects.description = "Perfect launch! (+1 Gap)"
+		Dice.Tier.RED:
+			# Poor start - disadvantage on first roll
+			pilot.has_poor_start = true
+			effects.disadvantage_next = true
+			effects.description = "Poor start! (Disadvantage next roll)"
+		Dice.Tier.GREEN:
+			effects.description = "Good start"
+		_:
+			effects.description = "Average start"
+	
+	return effects
+
+# Update positions for all pilots based on total distance
+static func update_all_positions(pilots: Array) -&gt; void:
+	# Sort by total distance (highest first)
+	pilots.sort_custom(func(a, b): return a.total_distance &gt; b.total_distance)
+	
+	# Update position numbers
+	for i in range(pilots.size()):
+		if not pilots[i].finished:
+			pilots[i].position = i + 1
+
+# Check if a pilot can continue racing
+static func can_pilot_race(pilot: PilotState) -&gt; bool:
+	return not pilot.finished
+
+# Get pilots in finishing order
+static func get_finish_order(pilots: Array) -&gt; Array:
+	var finished_pilots = []
+	for pilot in pilots:
+		if pilot.finished:
+			finished_pilots.append(pilot)
+	
+	finished_pilots.sort_custom(func(a, b): return a.position &lt; b.position)
+	return finished_pilots
+</document_content>
+  </document>
+  <document index="8">
+    <source>scripts\systems\OvertakeResolver.gd</source>
+    <document_content># OvertakeResolver.gd
+extends RefCounted
+class_name OvertakeResolver
+
+# Handles all overtaking detection and resolution
+# This class is responsible ONLY for overtaking mechanics
+
+signal overtake_detected(attacker, defender, excess_gap)
+signal overtake_resolved(attacker, defender, success: bool, attacker_roll, defender_roll)
+
+# Configuration
+const DEFENDER_POSITION_BONUS = 2  # Bonus for holding position
+
+# Result of an overtake attempt
+class OvertakeResult:
+	var success: bool = false
+	var attacker_roll: Dice.DiceResult
+	var defender_roll: Dice.DiceResult
+	var adjusted_movement: int = 0  # How much the attacker actually moves
+	
+	func _init(is_success: bool, att_roll: Dice.DiceResult, def_roll: Dice.DiceResult):
+		success = is_success
+		attacker_roll = att_roll
+		defender_roll = def_roll
+
+# Check if movement would cause overtakes
+static func check_potential_overtakes(attacker, planned_movement: int, all_pilots: Array) -&gt; Array:
+	var overtake_attempts = []
+	var attacker_new_position = attacker.gap_in_sector + planned_movement
+	
+	for other in all_pilots:
+		if other == attacker or other.finished:
+			continue
+		
+		# Check if they're ahead of us now and we'd pass them
+		if other.current_sector == attacker.current_sector:
+			var currently_behind = attacker.gap_in_sector &lt; other.gap_in_sector
+			var would_be_ahead = attacker_new_position &gt; other.gap_in_sector
+			
+			if currently_behind and would_be_ahead:
+				var excess = attacker_new_position - other.gap_in_sector
+				overtake_attempts.append({
+					"defender": other,
+					"excess_gap": excess,
+					"defender_position": other.gap_in_sector
+				})
+		
+		# TODO: Handle overtakes across sector boundaries
+		# This gets complex and needs careful consideration
+	
+	# Sort by defender position - closest defenders first
+	overtake_attempts.sort_custom(func(a, b): 
+		return a["defender_position"] &lt; b["defender_position"]
+	)
+	
+	return overtake_attempts
+
+# Resolve a single overtake attempt
+static func resolve_overtake(
+	attacker, 
+	defender, 
+	sector,  # Current sector for stat determination
+	excess_gap: int,
+	modifiers_attacker: Array = [],
+	modifiers_defender: Array = []
+) -&gt; OvertakeResult:
+	
+	# Get the stat for this sector
+	var stat_name = sector.check_type
+	var attacker_stat = attacker.get_stat(stat_name)
+	var defender_stat = defender.get_stat(stat_name)
+	
+	# Build modifiers for the contested roll
+	var defender_mods = modifiers_defender.duplicate()
+	defender_mods.append(Dice.create_bonus(DEFENDER_POSITION_BONUS, "Track Position"))
+	
+	var attacker_mods = modifiers_attacker.duplicate()
+	attacker_mods.append(Dice.create_bonus(excess_gap, "Momentum"))
+	
+	# Make the contested rolls
+	var defender_roll = Dice.roll_d20(defender_stat, stat_name, defender_mods, {}, {
+		"context": "defend_position",
+		"pilot": defender.name
+	})
+	
+	var attacker_roll = Dice.roll_d20(attacker_stat, stat_name, attacker_mods, {}, {
+		"context": "overtake_attempt", 
+		"pilot": attacker.name
+	})
+	
+	# Determine success
+	var success = attacker_roll.final_total &gt; defender_roll.final_total
+	
+	return OvertakeResult.new(success, attacker_roll, defender_roll)
+
+# Process multiple overtake attempts in sequence
+static func process_overtake_chain(
+	attacker,
+	planned_movement: int,
+	overtake_attempts: Array,
+	sector
+) -&gt; Dictionary:
+	
+	var final_movement = planned_movement
+	var results = []
+	var blocked_by = null
+	
+	for attempt in overtake_attempts:
+		var defender = attempt["defender"]
+		var excess_gap = attempt["excess_gap"]
+		
+		# Resolve the overtake
+		var result = resolve_overtake(attacker, defender, sector, excess_gap)
+		results.append({
+			"defender": defender,
+			"result": result
+		})
+		
+		if not result.success:
+			# Overtake blocked - adjust movement to slot behind this defender
+			final_movement = defender.gap_in_sector - attacker.gap_in_sector - 1
+			blocked_by = defender
+			break  # Can't overtake anyone else if blocked
+	
+	return {
+		"final_movement": final_movement,
+		"original_movement": planned_movement,
+		"results": results,
+		"blocked_by": blocked_by
+	}
+
+# Utility function to describe overtake situation
+static func describe_overtake_situation(attacker, defender, excess_gap: int) -&gt; String:
+	return "%s attempting to pass %s with %d Gap momentum advantage" % [
+		attacker.name, defender.name, excess_gap
+	]
+</document_content>
+  </document>
+  <document index="9">
+    <source>scripts\systems\pilotstate.gd</source>
+    <document_content># PilotState.gd
+extends Resource
+class_name PilotState
+
+# Core pilot data
+var pilot_data: Resource  # Will be the full Pilot resource later
+var name: String = "Unknown"
+
+# Race position data
+var current_sector: int = 0
+var gap_in_sector: int = 0
+var current_lap: int = 1
+var total_distance: int = 0  # Total Gap traveled (for position)
+var position: int = 1
+var finished: bool = false  # Track if pilot has finished the race
+
+# Status flags
+var is_clear_air: bool = true
+var is_attacking: bool = false
+var is_defending: bool = false
+var is_wheel_to_wheel: bool = false
+var is_in_train: bool = false
+
+# Track who we're interacting with
+var attacking_targets: Array = []  # Fins we're attacking
+var defending_from: Array = []     # Fins attacking us
+var wheel_to_wheel_with: Array = [] # Fins we're W2W with
+
+# Race start effects
+var has_poor_start: bool = false  # Will have disadvantage on first roll
+
+# Pilot stats (will be replaced by full pilot resource later)
+var twitch: int = 5
+var craft: int = 5
+var sync: int = 5
+var edge: int = 5
+
+# Get a specific stat by name
+func get_stat(stat_name: String) -&gt; int:
+	match stat_name:
+		"twitch": return twitch
+		"craft": return craft
+		"sync": return sync
+		"edge": return edge
+	return 5
+
+# Get current status as a string for display
+func get_status_string() -&gt; String:
+	var statuses = []
+	if is_clear_air:
+		statuses.append("Clear Air")
+	if is_wheel_to_wheel:
+		statuses.append("Wheel-to-Wheel")
+	if is_attacking:
+		statuses.append("Attacking")
+	if is_defending:
+		statuses.append("Defending")
+	if is_in_train:
+		statuses.append("TRAIN")
+	
+	if statuses.is_empty():
+		return "Unknown"
+	return " + ".join(statuses)
+
+# Get position info as string for debugging
+func get_position_string() -&gt; String:
+	return "P%d | Lap %d | Sector %d | Gap %d | Total: %d" % [
+		position, current_lap, current_sector + 1, gap_in_sector, total_distance
+	]
+
+# Initialize from dictionary (for easy setup)
+func setup_from_dict(data: Dictionary, start_position: int = 1) -&gt; void:
+	name = data.get("name", "Pilot %d" % start_position)
+	position = start_position
+	
+	if data.has("twitch"):
+		twitch = data.twitch
+		craft = data.craft
+		sync = data.sync
+		edge = data.edge
+
+# Reset status flags (called when recalculating)
+func clear_statuses() -&gt; void:
+	is_clear_air = true
+	is_attacking = false
+	is_defending = false
+	is_wheel_to_wheel = false
+	is_in_train = false
+	attacking_targets.clear()
+	defending_from.clear()
+	wheel_to_wheel_with.clear()
+
+# Mark as finished
+func finish_race(finish_position: int) -&gt; void:
+	finished = true
+	clear_statuses()
+	position = finish_position
+</document_content>
+  </document>
+  <document index="10">
+    <source>scripts\systems\RaceSimulator.gd</source>
+    <document_content># RaceSimulator.gd
+extends Node
+class_name RaceSimulator
+
+# Preload the helper classes
+const StatusCalc = preload("res://scripts/systems/StatusCalculator.gd")
+const OvertakeRes = preload("res://scripts/systems/OvertakeResolver.gd")
+const MoveProc = preload("res://scripts/systems/MovementProcessor.gd")
+const StartHandler = preload("res://scripts/systems/RaceStartHandler.gd")
+
+# Signals for the event-heavy system
+signal race_started(circuit: Circuit, pilots: Array)
+signal race_start_rolls(pilot_results: Array)
+signal round_started(round_number: int)
+signal pilot_rolling(pilot: PilotState, sector: Sector)
+signal pilot_rolled(pilot: PilotState, result: Dice.DiceResult)
+signal pilot_moved(pilot: PilotState, movement: int)
+signal overtake_detected(overtaking_pilot: PilotState, overtaken_pilot: PilotState)
+signal overtake_attempt(attacker: PilotState, defender: PilotState, attacker_roll: Dice.DiceResult, defender_roll: Dice.DiceResult)
+signal overtake_completed(overtaking_pilot: PilotState, overtaken_pilot: PilotState)
+signal overtake_blocked(attacker: PilotState, defender: PilotState)
+signal sector_completed(pilot: PilotState, sector: Sector)
+signal lap_completed(pilot: PilotState, lap_number: int)
+signal pilot_finished(pilot: PilotState, finish_position: int)
+signal wheel_to_wheel_detected(pilot1: PilotState, pilot2: PilotState)
+signal focus_mode_triggered(pilots: Array, reason: String)
+signal race_finished(final_positions: Array)
+
+# Race states
+enum RaceMode {
+	STOPPED,
+	RUNNING,
+	PAUSED,
+	FOCUS_MODE,
+	FINISHED
+}
+
+# Core race data
+var current_circuit: Circuit
+var pilots: Array[PilotState] = []
+var race_mode: RaceMode = RaceMode.STOPPED
+var current_round: int = 0
+
+# Auto-advance timer
+var auto_advance_timer: Timer
+var auto_advance_delay: float = 1.5  # Seconds between automatic rounds
+
+func _ready():
+	# Setup timer for auto advancement
+	auto_advance_timer = Timer.new()
+	auto_advance_timer.timeout.connect(_on_auto_advance)
+	auto_advance_timer.one_shot = true
+	add_child(auto_advance_timer)
+
+# Start a new race
+func start_race(circuit: Circuit, pilot_list: Array):
+	current_circuit = circuit
+	race_mode = RaceMode.RUNNING
+	current_round = 0
+	
+	# Initialize pilot states
+	pilots.clear()
+	for i in range(pilot_list.size()):
+		var pilot_state = PilotState.new()
+		pilot_state.setup_from_dict(pilot_list[i], i + 1)
+		pilots.append(pilot_state)
+	
+	# Use StartHandler to setup grid
+	StartHandler.form_starting_grid(pilots, circuit)
+	
+	race_started.emit(current_circuit, pilots)
+	
+	# Execute race start procedure
+	execute_race_start()
+
+# Handle the race start procedure
+func execute_race_start():
+	# Use StartHandler for launch procedure
+	var start_results = StartHandler.execute_launch_procedure(pilots)
+	
+	# Convert to format expected by signal
+	var signal_data = []
+	for result in start_results:
+		signal_data.append({
+			"pilot": result.pilot,
+			"roll": result.roll
+		})
+	
+	# Emit the start results
+	race_start_rolls.emit(signal_data)
+	
+	# Update positions after start bonuses
+	MoveProc.update_all_positions(pilots)
+	
+	# Start the first round
+	process_round()
+
+# Pause the race
+func pause_race():
+	race_mode = RaceMode.PAUSED
+	auto_advance_timer.stop()
+
+# Resume from pause
+func resume_race():
+	if race_mode == RaceMode.PAUSED:
+		race_mode = RaceMode.RUNNING
+		process_round()
+
+# Process a single round of racing
+func process_round():
+	if race_mode != RaceMode.RUNNING:
+		return
+	
+	current_round += 1
+	round_started.emit(current_round)
+	
+	# Update positions
+	MoveProc.update_all_positions(pilots)
+	
+	# Calculate all pilot statuses
+	StatusCalc.calculate_all_statuses(pilots)
+	
+	# Check for wheel-to-wheel situations
+	var wheel_to_wheel_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
+	for pair in wheel_to_wheel_pairs:
+		wheel_to_wheel_detected.emit(pair[0], pair[1])
+	
+	# Process each pilot in position order
+	for pilot in pilots:
+		if race_mode != RaceMode.RUNNING:
+			break
+		
+		if not MoveProc.can_pilot_race(pilot):
+			continue
+			
+		process_pilot_turn(pilot)
+	
+	# Check for race finish
+	if check_race_finished():
+		finish_race()
+	else:
+		# Schedule next round
+		auto_advance_timer.start(auto_advance_delay)
+
+# Process a single pilot's turn
+func process_pilot_turn(pilot: PilotState):
+	var sector = current_circuit.sectors[pilot.current_sector]
+	
+	# Emit that pilot is about to roll
+	pilot_rolling.emit(pilot, sector)
+	
+	# Make the sector roll
+	var roll_result = make_pilot_roll(pilot, sector)
+	pilot_rolled.emit(pilot, roll_result)
+	
+	# Calculate base movement
+	var base_movement = MoveProc.calculate_base_movement(sector, roll_result)
+	
+	# Handle overtaking
+	var final_movement = handle_overtaking(pilot, base_movement, sector)
+	
+	# Apply movement
+	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
+	pilot_moved.emit(pilot, final_movement)
+	
+	# Handle sector/lap completion
+	handle_movement_results(pilot, move_result)
+
+# Make a dice roll for a pilot
+func make_pilot_roll(pilot: PilotState, sector: Sector) -&gt; Dice.DiceResult:
+	var stat_value = pilot.get_stat(sector.check_type)
+	var modifiers = []
+	
+	# Apply poor start disadvantage if applicable
+	if pilot.has_poor_start and current_round == 1:
+		modifiers.append(Dice.create_disadvantage("Poor Start"))
+		pilot.has_poor_start = false
+	
+	# Future: Add modifiers from badges, status effects, etc.
+	
+	var gates = {
+		"grey": sector.grey_threshold,
+		"green": sector.green_threshold,
+		"purple": sector.purple_threshold
+	}
+	
+	return Dice.roll_d20(stat_value, sector.check_type, modifiers, gates, {
+		"pilot": pilot.name,
+		"sector": sector.sector_name,
+		"status": pilot.get_status_string()
+	})
+
+# Handle overtaking attempts and return adjusted movement
+func handle_overtaking(pilot: PilotState, base_movement: int, sector: Sector) -&gt; int:
+	var overtake_attempts = OvertakeRes.check_potential_overtakes(pilot, base_movement, pilots)
+	
+	if overtake_attempts.size() == 0:
+		return base_movement
+	
+	# Process the overtake chain
+	var overtake_chain = OvertakeRes.process_overtake_chain(
+		pilot, base_movement, overtake_attempts, sector
+	)
+	
+	# Emit events for each overtake attempt
+	for attempt_result in overtake_chain["results"]:
+		var defender = attempt_result["defender"]
+		var result_obj = attempt_result["result"]
+		
+		overtake_detected.emit(pilot, defender)
+		overtake_attempt.emit(pilot, defender, result_obj.attacker_roll, result_obj.defender_roll)
+		
+		if result_obj.success:
+			overtake_completed.emit(pilot, defender)
+		else:
+			overtake_blocked.emit(pilot, defender)
+	
+	return overtake_chain["final_movement"]
+
+# Handle the results of movement (sectors, laps, finishing)
+func handle_movement_results(pilot: PilotState, move_result):
+	# Emit events for completed sectors
+	for completed_sector in move_result.sectors_completed:
+		sector_completed.emit(pilot, completed_sector)
+	
+	# Handle lap completion
+	if move_result.lap_completed:
+		lap_completed.emit(pilot, move_result.new_lap_number)
+	
+	# Handle race finish for this pilot
+	if move_result.race_finished:
+		handle_pilot_finish(pilot)
+
+# Handle a pilot finishing the race
+func handle_pilot_finish(pilot: PilotState):
+	# Count finish position
+	var finish_position = 1
+	for other in pilots:
+		if other.finished and other != pilot:
+			finish_position += 1
+	
+	pilot.finish_race(finish_position)
+	pilot_finished.emit(pilot, finish_position)
+
+# Check if all pilots have finished
+func check_race_finished() -&gt; bool:
+	for pilot in pilots:
+		if not pilot.finished:
+			return false
+	return true
+
+# End the race
+func finish_race():
+	race_mode = RaceMode.FINISHED
+	auto_advance_timer.stop()
+	
+	var final_positions = MoveProc.get_finish_order(pilots)
+	race_finished.emit(final_positions)
+
+# Exit focus mode and continue racing
+func exit_focus_mode():
+	if race_mode == RaceMode.FOCUS_MODE:
+		race_mode = RaceMode.RUNNING
+		process_round()
+
+# Timer callback for auto-advancement
+func _on_auto_advance():
+	if race_mode == RaceMode.RUNNING:
+		process_round()
+</document_content>
+  </document>
+  <document index="11">
+    <source>scripts\systems\RaceStartHandler.gd</source>
+    <document_content># RaceStartHandler.gd
+extends RefCounted
+class_name RaceStartHandler
+
+# Handles race start procedures including grid formation and launch rolls
+
+class StartResult:
+	var pilot: PilotState
+	var roll: Dice.DiceResult
+	var effects: Dictionary  # Bonus applied, disadvantage, etc.
+
+# Find the starting sector in a circuit
+static func find_start_sector(circuit: Circuit) -&gt; int:
+	for i in range(circuit.sectors.size()):
+		if circuit.sectors[i].is_start_sector:
+			return i
+	return 0  # Default to first sector if none marked
+
+# Setup pilots on the starting grid
+static func form_starting_grid(pilots: Array, circuit: Circuit) -&gt; void:
+	var start_sector = find_start_sector(circuit)
+	
+	for i in range(pilots.size()):
+		var pilot = pilots[i]
+		pilot.position = i + 1
+		pilot.current_sector = start_sector
+		pilot.gap_in_sector = -(i)  # Grid positions: 0, -1, -2, -3, etc.
+		pilot.current_lap = 1
+		pilot.total_distance = -(i)
+
+# Execute launch procedure for all pilots
+static func execute_launch_procedure(pilots: Array) -&gt; Array:
+	var results = []
+	
+	for pilot in pilots:
+		var start_result = StartResult.new()
+		start_result.pilot = pilot
+		
+		# Roll for launch reaction
+		start_result.roll = Dice.roll_d20(pilot.twitch, "twitch", [], {}, {
+			"context": "race_start",
+			"pilot": pilot.name
+		})
+		
+		# Apply effects based on roll
+		start_result.effects = _apply_launch_effects(pilot, start_result.roll)
+		
+		results.append(start_result)
+	
+	return results
+
+# Apply effects from launch roll
+static func _apply_launch_effects(pilot: PilotState, roll: Dice.DiceResult) -&gt; Dictionary:
+	var effects = {
+		"tier": roll.tier_name,
+		"bonus_gap": 0,
+		"has_disadvantage": false,
+		"description": ""
+	}
+	
+	match roll.tier:
+		Dice.Tier.PURPLE:
+			pilot.gap_in_sector += 1
+			pilot.total_distance += 1
+			effects.bonus_gap = 1
+			effects.description = "Perfect launch! Gained position!"
+			
+		Dice.Tier.RED:
+			pilot.has_poor_start = true
+			effects.has_disadvantage = true
+			effects.description = "Bogged down at the start!"
+			
+		Dice.Tier.GREEN:
+			effects.description = "Good getaway!"
+			
+		_:
+			effects.description = "Average start"
+	
+	return effects
+
+# Check if pilots should be in formation lap
+static func should_use_formation_lap(circuit: Circuit) -&gt; bool:
+	# Could check circuit properties, weather, etc.
+	# For now, always false
+	return false
+
+# Get starting positions as a formatted string for display
+static func get_grid_display(pilots: Array) -&gt; String:
+	var lines = []
+	lines.append("STARTING GRID:")
+	lines.append("--------------")
+	
+	for pilot in pilots:
+		lines.append("P%d: %s" % [pilot.position, pilot.name])
+	
+	return "\n".join(lines)
+</document_content>
+  </document>
+  <document index="12">
+    <source>scripts\systems\StatusCalculator.gd</source>
+    <document_content># StatusCalculator.gd
+extends RefCounted
+class_name StatusCalculator
+
+# Status calculation for racing pilots
+# This class is responsible ONLY for determining pilot statuses based on positions
+
+const ATTACK_RANGE = 3  # Gap range for attacking
+const DEFEND_RANGE = 3  # Gap range for defending
+
+# Calculate all statuses for a group of pilots
+static func calculate_all_statuses(pilots: Array) -&gt; void:
+	# First, clear all statuses
+	_clear_all_statuses(pilots)
+	
+	# Calculate basic statuses for each pilot
+	for i in range(pilots.size()):
+		var pilot = pilots[i]
+		if pilot.finished:
+			continue
+			
+		_calculate_pilot_status(pilot, pilots)
+	
+	# Check for trains
+	_detect_trains(pilots)
+
+# Clear all status flags for pilots
+static func _clear_all_statuses(pilots: Array) -&gt; void:
+	for pilot in pilots:
+		pilot.is_clear_air = true
+		pilot.is_attacking = false
+		pilot.is_defending = false
+		pilot.is_wheel_to_wheel = false
+		pilot.is_in_train = false
+		pilot.attacking_targets.clear()
+		pilot.defending_from.clear()
+		pilot.wheel_to_wheel_with.clear()
+
+# Calculate status for a single pilot relative to others
+static func _calculate_pilot_status(pilot, all_pilots: Array) -&gt; void:
+	var has_close_fin = false
+	
+	for other in all_pilots:
+		if other == pilot or other.finished:
+			continue
+		
+		var gap_diff = calculate_gap_between(pilot, other)
+		
+		if gap_diff == 0:
+			# Wheel-to-wheel
+			pilot.is_wheel_to_wheel = true
+			pilot.wheel_to_wheel_with.append(other)
+			has_close_fin = true
+			
+		elif gap_diff &gt; 0 and gap_diff &lt;= ATTACK_RANGE:
+			# Other is ahead - we're attacking
+			pilot.is_attacking = true
+			pilot.attacking_targets.append(other)
+			has_close_fin = true
+			
+		elif gap_diff &lt; 0 and gap_diff &gt;= -DEFEND_RANGE:
+			# Other is behind - we're defending
+			pilot.is_defending = true
+			pilot.defending_from.append(other)
+			has_close_fin = true
+	
+	# Set clear air if no close fins
+	pilot.is_clear_air = not has_close_fin
+
+# Detect train formations
+static func _detect_trains(pilots: Array) -&gt; void:
+	var pilots_in_trains = {}
+	
+	# Find all pilots that are both attacking AND defending
+	for pilot in pilots:
+		if pilot.is_attacking and pilot.is_defending:
+			# This pilot is sandwiched - mark entire connected group
+			var train_group = _get_connected_group(pilot)
+			for member in train_group:
+				pilots_in_trains[member] = true
+	
+	# Apply train status
+	for pilot in pilots_in_trains.keys():
+		pilot.is_in_train = true
+
+# Get all pilots connected to this pilot through attack/defend relationships
+static func _get_connected_group(pilot) -&gt; Array:
+	var group = []
+	group.append(pilot)
+	group.append_array(pilot.attacking_targets)
+	group.append_array(pilot.defending_from)
+	return group
+
+# Calculate gap between two pilots
+static func calculate_gap_between(pilot1, pilot2) -&gt; int:
+	# Returns positive if pilot2 is ahead, negative if behind, 0 if equal
+	# First check if they're in the same sector
+	if pilot1.current_sector == pilot2.current_sector:
+		return pilot2.gap_in_sector - pilot1.gap_in_sector
+	else:
+		# Use total distance for pilots in different sectors
+		return pilot2.total_distance - pilot1.total_distance
+
+# Get wheel-to-wheel pairs from current statuses
+static func get_wheel_to_wheel_pairs(pilots: Array) -&gt; Array:
+	var pairs = []
+	var already_paired = {}
+	
+	for pilot in pilots:
+		if pilot.is_wheel_to_wheel:
+			for other in pilot.wheel_to_wheel_with:
+				# Create a unique key for this pair
+				var pair_key = [pilot.name, other.name]
+				pair_key.sort()
+				var key_string = pair_key[0] + "_" + pair_key[1]
+				
+				if not already_paired.has(key_string):
+					pairs.append([pilot, other])
+					already_paired[key_string] = true
+	
+	return pairs
+
+# Utility function to get status summary
+static func get_status_summary(pilots: Array) -&gt; Dictionary:
+	var summary = {
+		"clear_air": [],
+		"attacking": [],
+		"defending": [],
+		"wheel_to_wheel": [],
+		"trains": []
+	}
+	
+	for pilot in pilots:
+		if pilot.finished:
+			continue
+			
+		if pilot.is_clear_air:
+			summary["clear_air"].append(pilot.name)
+		if pilot.is_attacking:
+			summary["attacking"].append(pilot.name)
+		if pilot.is_defending:
+			summary["defending"].append(pilot.name)
+		if pilot.is_wheel_to_wheel:
+			summary["wheel_to_wheel"].append(pilot.name)
+		if pilot.is_in_train:
+			summary["trains"].append(pilot.name)
+	
+	return summary
+</document_content>
+  </document>
+  <document index="13">
+    <source>scripts\tests\DiceTestScene.gd</source>
+    <document_content># DiceTestScene.gd
+# Attach this to a Control node to test the dice system
+extends Control
+
+# UI References - we'll assign these in setup_ui()
+var output_label: RichTextLabel
+var roll_button: Button
+var sector_name_label: Label
+var gates_label: Label
+var pilot_stats_label: Label
+var modifiers_option: OptionButton
+
+# Test data
+var test_pilot = {
+	"name": "Alex Nova",
+	"twitch": 7,
+	"craft": 5,
+	"sync": 6,
+	"edge": 8
+}
+
+var test_sectors = [
+	{
+		"name": "Harbor Chicane",
+		"check_stat": "twitch",
+		"gates": {"grey": 10, "green": 15, "purple": 20},
+		"description": "Tight corners requiring quick reflexes"
+	},
+	{
+		"name": "The Straight",
+		"check_stat": "edge",
+		"gates": {"grey": 8, "green": 14, "purple": 19},
+		"description": "Full throttle section - how far do you push?"
+	},
+	{
+		"name": "Technical Complex",
+		"check_stat": "craft",
+		"gates": {"grey": 12, "green": 17, "purple": 21},
+		"description": "Demanding series of corners"
+	},
+	{
+		"name": "Rain-Soaked Hairpin",
+		"check_stat": "twitch",
+		"gates": {"grey": 13, "green": 18, "purple": 23},
+		"description": "Treacherous wet conditions"
+	}
+]
+
+var current_sector_index = 0
+var roll_history = []
+
+func _ready():
+	# Create UI first
+	setup_ui()
+	
+	# Connect signals
+	roll_button.pressed.connect(_on_roll_pressed)
+	modifiers_option.item_selected.connect(_on_modifier_changed)
+	
+	# Setup initial display
+	display_sector_info()
+	display_pilot_info()
+	setup_modifier_options()
+	
+	output_label.text = "[b]Welcome to Dice System Test![/b]\n"
+	output_label.text += "Press 'Roll for Sector' to simulate a pilot navigating through sectors.\n\n"
+
+func setup_ui():
+	# Create the UI programmatically
+	var vbox = VBoxContainer.new()
+	vbox.name = "VBoxContainer"
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 10)
+	add_child(vbox)
+	
+	# Title
+	var title = Label.new()
+	title.text = "NEBULA CIRCUIT - Dice Test"
+	title.add_theme_font_size_override("font_size", 24)
+	vbox.add_child(title)
+	
+	# Sector Info Container
+	var sector_container = VBoxContainer.new()
+	sector_container.name = "SectorInfo"
+	vbox.add_child(sector_container)
+	
+	sector_name_label = Label.new()
+	sector_name_label.name = "SectorNameLabel"
+	sector_container.add_child(sector_name_label)
+	
+	gates_label = Label.new()
+	gates_label.name = "GatesLabel"
+	sector_container.add_child(gates_label)
+	
+	vbox.add_child(HSeparator.new())
+	
+	# Pilot Info Container
+	var pilot_container = VBoxContainer.new()
+	pilot_container.name = "PilotInfo"
+	vbox.add_child(pilot_container)
+	
+	pilot_stats_label = Label.new()
+	pilot_stats_label.name = "StatsLabel"
+	pilot_container.add_child(pilot_stats_label)
+	
+	vbox.add_child(HSeparator.new())
+	
+	# Modifiers Container
+	var mod_container = HBoxContainer.new()
+	mod_container.name = "ModifiersContainer"
+	vbox.add_child(mod_container)
+	
+	var mod_label = Label.new()
+	mod_label.text = "Test Modifiers: "
+	mod_container.add_child(mod_label)
+	
+	modifiers_option = OptionButton.new()
+	modifiers_option.name = "ModifiersOption"
+	mod_container.add_child(modifiers_option)
+	
+	# Roll Button
+	roll_button = Button.new()
+	roll_button.name = "RollButton"
+	roll_button.text = "Roll for Sector"
+	roll_button.custom_minimum_size = Vector2(200, 40)
+	vbox.add_child(roll_button)
+	
+	vbox.add_child(HSeparator.new())
+	
+	# Output Label
+	output_label = RichTextLabel.new()
+	output_label.name = "OutputLabel"
+	output_label.bbcode_enabled = true
+	output_label.custom_minimum_size = Vector2(600, 400)
+	output_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(output_label)
+
+func setup_modifier_options():
+	modifiers_option.clear()
+	modifiers_option.add_item("No Modifiers")
+	modifiers_option.add_item("Advantage (Badge: Perfect Line)")
+	modifiers_option.add_item("Disadvantage (Damaged Wing)")
+	modifiers_option.add_item("+3 Bonus (Team Sync)")
+	modifiers_option.add_item("Use Craft instead of Twitch")
+	modifiers_option.add_item("Complex (Advantage + Sync Bonus)")
+	modifiers_option.add_item("Terrible (Disadvantage + -2)")
+	modifiers_option.selected = 0
+
+func display_sector_info():
+	var sector = test_sectors[current_sector_index]
+	sector_name_label.text = "SECTOR %d: %s" % [current_sector_index + 1, sector.name]
+	sector_name_label.add_theme_font_size_override("font_size", 18)
+	
+	gates_label.text = "%s | Gates: Grey %d+ | Green %d+ | Purple %d+" % [
+		sector.description,
+		sector.gates.grey,
+		sector.gates.green,
+		sector.gates.purple
+	]
+
+func display_pilot_info():
+	pilot_stats_label.text = "PILOT: %s | Twitch: %d | Craft: %d | Sync: %d | Edge: %d" % [
+		test_pilot.name,
+		test_pilot.twitch,
+		test_pilot.craft,
+		test_pilot.sync,
+		test_pilot.edge
+	]
+
+func _on_modifier_changed(_index: int):
+	# Just for display feedback
+	output_label.append_text("[color=gray]Modifier changed: %s[/color]\n" % modifiers_option.get_item_text(modifiers_option.selected))
+
+func _on_roll_pressed():
+	var sector = test_sectors[current_sector_index]
+	var stat_name = sector.check_stat
+	var stat_value = test_pilot[stat_name]
+	
+	# Build modifiers based on selection
+	var modifiers = []
+	match modifiers_option.selected:
+		1: # Advantage
+			modifiers.append(Dice.create_advantage("Perfect Line Badge"))
+		2: # Disadvantage
+			modifiers.append(Dice.create_disadvantage("Damaged Wing"))
+		3: # +3 Bonus
+			modifiers.append(Dice.create_bonus(3, "Team Sync"))
+		4: # Stat replacement
+			modifiers.append(Dice.create_stat_replacement("craft", test_pilot.craft, "Methodical Approach Badge"))
+		5: # Complex - Advantage + Bonus
+			modifiers.append(Dice.create_advantage("Perfect Line Badge"))
+			modifiers.append(Dice.create_bonus(2, "Team Sync"))
+		6: # Terrible - Disadvantage + Penalty
+			modifiers.append(Dice.create_disadvantage("Damaged Wing"))
+			modifiers.append(Dice.create_bonus(-2, "Low Morale"))
+	
+	# Make the roll
+	var result = Dice.roll_d20(stat_value, stat_name, modifiers, sector.gates, {"sector": sector.name})
+	
+	# Display the results
+	display_roll_result(result, sector)
+	
+	# Move to next sector or loop back
+	current_sector_index = (current_sector_index + 1) % test_sectors.size()
+	if current_sector_index == 0:
+		output_label.append_text("\n[b][color=yellow]--- LAP COMPLETE ---[/color][/b]\n\n")
+	display_sector_info()
+
+func display_roll_result(result: Dice.DiceResult, sector: Dictionary):
+	output_label.append_text("\n[b]%s - %s Check[/b]\n" % [sector.name, result.stat_name.to_upper()])
+	
+	# Show the roll breakdown
+	output_label.append_text("Roll: d20(%d) + %s(%d)" % [result.base_roll, result.stat_name, result.stat_value])
+	
+	if result.flat_modifiers != 0:
+		var sign = "+" if result.flat_modifiers &gt; 0 else ""
+		output_label.append_text(" %s%d" % [sign, result.flat_modifiers])
+	
+	output_label.append_text(" = %d\n" % result.final_total)
+	
+	# Show modifiers applied
+	if result.modifiers_applied.size() &gt; 0:
+		output_label.append_text("[color=gray]Modifiers: ")
+		for mod in result.modifiers_applied:
+			output_label.append_text("%s | " % mod)
+		output_label.append_text("[/color]\n")
+	
+	# Show the tier result with color
+	var color_name = get_tier_color_name(result.tier)
+	output_label.append_text("Result: [b][color=%s]%s[/color][/b]\n" % [color_name, result.tier_name])
+	
+	# Narrative result based on tier
+	match result.tier:
+		Dice.Tier.PURPLE:
+			output_label.append_text("[color=purple]★ PERFECT EXECUTION! Gained major advantage![/color]\n")
+		Dice.Tier.GREEN:
+			output_label.append_text("[color=green]✓ Clean sector, maintaining position.[/color]\n")
+		Dice.Tier.GREY:
+			output_label.append_text("[color=gray]⚠ Struggled through sector, lost some time.[/color]\n")
+		Dice.Tier.RED:
+			output_label.append_text("[color=red]✗ CRITICAL ERROR! Major incident occurred![/color]\n")
+			# In full game, would roll on failure table here
+
+func get_tier_color_name(tier: Dice.Tier) -&gt; String:
+	match tier:
+		Dice.Tier.RED: return "red"
+		Dice.Tier.GREY: return "gray"
+		Dice.Tier.GREEN: return "green"  
+		Dice.Tier.PURPLE: return "purple"
+	return "white"
+</document_content>
+  </document>
+  <document index="14">
+    <source>scripts\tests\RaceTestScene.gd</source>
+    <document_content># RaceTestScene.gd
+extends Control
+
+var race_sim: RaceSimulator
+var race_log: RaceEventLog
+var pilot_status_panel: PilotStatusPanel
+var race_controls: RaceControls  # CHANGED: was pause_button, speed_slider, speed_label
+
+# Test circuit
+var test_circuit: Circuit
+
+func _ready():
+	setup_ui()
+	setup_race_simulator()
+	create_test_circuit()
+	setup_test_pilots()
+
+func setup_ui():
+	var main_vbox = VBoxContainer.new()
+	main_vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(main_vbox)
+	
+	# Title
+	var title = Label.new()
+	title.text = "NEBULA CIRCUIT - Race Simulation"
+	title.add_theme_font_size_override("font_size", 24)
+	main_vbox.add_child(title)
+	
+	main_vbox.add_child(HSeparator.new())
+	
+	# Control panel (CHANGED: Now uses RaceControls component)
+	race_controls = RaceControls.new()
+	race_controls.start_pressed.connect(_on_start_pressed)
+	race_controls.pause_pressed.connect(_on_pause_pressed)
+	race_controls.speed_changed.connect(_on_speed_changed)
+	main_vbox.add_child(race_controls)
+	
+	main_vbox.add_child(HSeparator.new())
+	
+	# Race display split
+	var split_container = HSplitContainer.new()
+	split_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_vbox.add_child(split_container)
+	
+	# Left side - Pilot status (CHANGED: Now uses PilotStatusPanel component)
+	pilot_status_panel = PilotStatusPanel.new()
+	split_container.add_child(pilot_status_panel)
+	
+	# Right side - Event log (CHANGED: Now uses RaceEventLog component)
+	race_log = RaceEventLog.new()
+	split_container.add_child(race_log)
+
+func setup_race_simulator():
+	race_sim = RaceSimulator.new()
+	add_child(race_sim)
+	
+	# Connect all the signals
+	race_sim.race_started.connect(_on_race_started)
+	race_sim.race_start_rolls.connect(_on_race_start_rolls)
+	race_sim.round_started.connect(_on_round_started)
+	race_sim.pilot_rolling.connect(_on_pilot_rolling)
+	race_sim.pilot_rolled.connect(_on_pilot_rolled)
+	race_sim.pilot_moved.connect(_on_pilot_moved)
+	race_sim.overtake_detected.connect(_on_overtake_detected)
+	race_sim.overtake_attempt.connect(_on_overtake_attempt)
+	race_sim.overtake_completed.connect(_on_overtake_completed)
+	race_sim.overtake_blocked.connect(_on_overtake_blocked)
+	race_sim.sector_completed.connect(_on_sector_completed)
+	race_sim.lap_completed.connect(_on_lap_completed)
+	race_sim.pilot_finished.connect(_on_pilot_finished)
+	race_sim.wheel_to_wheel_detected.connect(_on_wheel_to_wheel)
+	race_sim.focus_mode_triggered.connect(_on_focus_mode)
+	race_sim.race_finished.connect(_on_race_finished)
+
+func create_test_circuit():
+	test_circuit = Circuit.new()
+	test_circuit.circuit_name = "Test Track Alpha"
+	test_circuit.total_laps = 10
+	
+	# Sector 1: Fast straight (STARTING GRID)
+	var s1 = Sector.new()
+	s1.sector_name = "Main Straight"
+	s1.length_in_gap = 6
+	s1.carrythru = 3
+	s1.check_type = "edge"
+	s1.grey_threshold = 8
+	s1.green_threshold = 13
+	s1.purple_threshold = 18
+	s1.red_movement = 1
+	s1.grey_movement = 2
+	s1.green_movement = 4
+	s1.purple_movement = 5
+	s1.is_start_sector = true  # This is the starting grid!
+	
+	# Sector 2: Technical section
+	var s2 = Sector.new()
+	s2.sector_name = "Technical Complex"
+	s2.length_in_gap = 5
+	s2.carrythru = 1
+	s2.check_type = "craft"
+	s2.grey_threshold = 10
+	s2.green_threshold = 15
+	s2.purple_threshold = 20
+	s2.red_movement = 0
+	s2.grey_movement = 2
+	s2.green_movement = 3
+	s2.purple_movement = 4
+	
+	# Sector 3: Twisty section
+	var s3 = Sector.new()
+	s3.sector_name = "Esses"
+	s3.length_in_gap = 4
+	s3.carrythru = 2
+	s3.check_type = "twitch"
+	s3.grey_threshold = 9
+	s3.green_threshold = 14
+	s3.purple_threshold = 19
+	s3.red_movement = 1
+	s3.grey_movement = 2
+	s3.green_movement = 3
+	s3.purple_movement = 4
+	
+	test_circuit.sectors = [s1, s2, s3]
+
+func setup_test_pilots():
+	var test_pilots = [
+		{"name": "Nova", "twitch": 7, "craft": 5, "sync": 6, "edge": 8},
+		{"name": "Blaze", "twitch": 6, "craft": 7, "sync": 5, "edge": 6},
+		{"name": "Frost", "twitch": 8, "craft": 6, "sync": 7, "edge": 5},
+		{"name": "Shadow", "twitch": 5, "craft": 8, "sync": 6, "edge": 7}
+	]
+	
+	# CHANGED: Use PilotStatusPanel to setup pilots
+	pilot_status_panel.setup_pilots(test_pilots)
+	pilot_status_panel.set_circuit(test_circuit)
+
+func _on_start_pressed():
+	# CHANGED: Use race_log method instead of direct output_log calls
+	race_log.log_race_start(test_circuit.circuit_name, test_circuit.total_laps)
+	
+	var pilots = [
+		{"name": "Nova", "twitch": 7, "craft": 5, "sync": 6, "edge": 8},
+		{"name": "Blaze", "twitch": 6, "craft": 7, "sync": 5, "edge": 6},
+		{"name": "Frost", "twitch": 8, "craft": 6, "sync": 7, "edge": 5},
+		{"name": "Shadow", "twitch": 5, "craft": 8, "sync": 6, "edge": 7}
+	]
+	
+	# CHANGED: Use race_controls to enable pause button
+	race_controls.set_pause_enabled(true)
+	race_sim.start_race(test_circuit, pilots)
+
+func _on_pause_pressed():
+	if race_sim.race_mode == RaceSimulator.RaceMode.PAUSED:
+		race_sim.resume_race()
+		race_controls.set_pause_text(false)
+	else:
+		race_sim.pause_race()
+		race_controls.set_pause_text(true)
+
+func _on_speed_changed(value: float):
+	race_sim.auto_advance_delay = value
+
+func update_pilot_displays():
+	# CHANGED: Now just delegates to PilotStatusPanel
+	pilot_status_panel.update_all_pilots(race_sim.pilots)
+
+# Signal handlers - ALL CHANGED to use race_log methods
+func _on_race_started(circuit: Circuit, pilots: Array):
+	update_pilot_displays()
+
+func _on_race_start_rolls(start_results: Array):
+	race_log.log_start_rolls(start_results)
+	update_pilot_displays()
+
+func _on_round_started(round_num: int):
+	race_log.log_round_started(round_num)
+	update_pilot_displays()
+
+func _on_pilot_rolling(pilot, sector):
+	race_log.log_pilot_rolling(pilot.name, sector.sector_name)
+
+func _on_pilot_rolled(pilot, result: Dice.DiceResult):
+	race_log.log_pilot_rolled(pilot.name, result)
+
+func _on_pilot_moved(pilot, movement: int):
+	update_pilot_displays()
+
+func _on_overtake_detected(overtaking, overtaken):
+	race_log.log_overtake_detected(overtaking.name, overtaken.name)
+
+func _on_overtake_attempt(attacker, defender, attacker_roll: Dice.DiceResult, defender_roll: Dice.DiceResult):
+	race_log.log_overtake_attempt(attacker.name, defender.name, attacker_roll, defender_roll)
+
+func _on_overtake_completed(overtaking, overtaken):
+	race_log.log_overtake_completed(overtaking.name, overtaken.name)
+
+func _on_overtake_blocked(attacker, defender):
+	race_log.log_overtake_blocked(attacker.name, defender.name)
+
+func _on_sector_completed(pilot, sector):
+	race_log.log_sector_completed(pilot.name, sector.sector_name)
+
+func _on_lap_completed(pilot, lap_num: int):
+	race_log.log_lap_completed(pilot.name, lap_num)
+
+func _on_pilot_finished(pilot, finish_position: int):
+	race_log.log_pilot_finished(pilot.name, finish_position)
+
+func _on_wheel_to_wheel(pilot1, pilot2):
+	race_log.log_wheel_to_wheel(pilot1.name, pilot2.name)
+
+func _on_focus_mode(pilots: Array, reason: String):
+	race_log.log_focus_mode(reason)
+
+func _on_race_finished(final_positions: Array):
+	race_log.log_race_finished(final_positions)
+	race_controls.set_pause_enabled(false)
+</document_content>
+  </document>
+  <document index="15">
+    <source>scripts\ui\PilotStatusPanel.gd</source>
+    <document_content># PilotStatusPanel.gd
+# Reusable pilot status display component
+extends VBoxContainer
+class_name PilotStatusPanel
+
+var pilot_labels: Dictionary = {}
+var circuit: Circuit  # Reference to track sector names
+
+func _ready():
+	setup_ui()
+
+func setup_ui():
+	# Set minimum width for better visibility
+	custom_minimum_size.x = 450
+	# Title
+	var status_title = Label.new()
+	status_title.text = "RACE POSITIONS"
+	status_title.add_theme_font_size_override("font_size", 18)
+	add_child(status_title)
+
+# Initialize pilot labels for a list of pilots
+func setup_pilots(pilot_data: Array):
+	# Clear existing labels
+	for child in get_children():
+		if child is RichTextLabel:
+			child.queue_free()
+	pilot_labels.clear()
+	
+	# Create pilot status labels
+	for data in pilot_data:
+		var label = RichTextLabel.new()
+		label.bbcode_enabled = true
+		label.custom_minimum_size.y = 60
+		label.fit_content = true
+		add_child(label)
+		pilot_labels[data.name] = label
+
+# Set the circuit reference for sector names
+func set_circuit(race_circuit: Circuit):
+	circuit = race_circuit
+
+# Update all pilot displays from a list of pilot states
+func update_all_pilots(pilots: Array):
+	for pilot in pilots:
+		update_pilot_display(pilot)
+
+# Update a single pilot's display
+func update_pilot_display(pilot):
+	if not pilot.name in pilot_labels:
+		return
+	
+	var label = pilot_labels[pilot.name]
+	var color = get_position_color(pilot.position)
+	
+	var sector_name = ""
+	if circuit and pilot.current_sector &lt; circuit.sectors.size():
+		sector_name = circuit.sectors[pilot.current_sector].sector_name
+	
+	label.clear()
+	label.append_text("[b][color=%s]P%d - %s[/color][/b]\n" % [color, pilot.position, pilot.name])
+	
+	if pilot.finished:
+		label.append_text("[color=green]FINISHED - Victory Lap![/color]\n")
+	else:
+		label.append_text("Lap %d/%d | Sector: %s\n" % [
+			pilot.current_lap, circuit.total_laps, sector_name
+		])
+		label.append_text("Progress: %d Gap | Status: %s" % [
+			pilot.gap_in_sector, pilot.get_status_string()
+		])
+		
+		# Add color coding for status
+		if pilot.is_in_train:
+			label.append_text(" [color=red]⚠[/color]")
+		elif pilot.is_wheel_to_wheel:
+			label.append_text(" [color=orange]⚔[/color]")
+		elif pilot.is_attacking:
+			label.append_text(" [color=yellow]→[/color]")
+		elif pilot.is_defending:
+			label.append_text(" [color=cyan]←[/color]")
+
+# Get color based on position
+func get_position_color(position: int) -&gt; String:
+	match position:
+		1: return "gold"
+		2: return "silver"
+		3: return "orange"
+	return "white"
+</document_content>
+  </document>
+  <document index="16">
+    <source>scripts\ui\RaceControls.gd</source>
+    <document_content># RaceControls.gd
+# Reusable race control panel component
+extends HBoxContainer
+class_name RaceControls
+
+signal start_pressed
+signal pause_pressed
+signal speed_changed(value: float)
+
+var start_button: Button
+var pause_button: Button
+var speed_slider: HSlider
+var speed_label: Label
+
+func _ready():
+	setup_ui()
+
+func setup_ui():
+	# Start button
+	start_button = Button.new()
+	start_button.text = "Start Race"
+	start_button.pressed.connect(_on_start_pressed)
+	add_child(start_button)
+	
+	# Pause button
+	pause_button = Button.new()
+	pause_button.text = "Pause"
+	pause_button.pressed.connect(_on_pause_pressed)
+	pause_button.disabled = true
+	add_child(pause_button)
+	
+	# Separator
+	add_child(VSeparator.new())
+	
+	# Speed controls container
+	var speed_container = HBoxContainer.new()
+	add_child(speed_container)
+	
+	# Speed label
+	var speed_text = Label.new()
+	speed_text.text = "Speed: "
+	speed_container.add_child(speed_text)
+	
+	# Speed slider
+	speed_slider = HSlider.new()
+	speed_slider.min_value = 0.5
+	speed_slider.max_value = 3.0
+	speed_slider.value = 1.5
+	speed_slider.step = 0.1
+	speed_slider.custom_minimum_size.x = 150
+	speed_slider.value_changed.connect(_on_speed_changed)
+	speed_container.add_child(speed_slider)
+	
+	# Speed value label
+	speed_label = Label.new()
+	speed_label.text = "1.5s"
+	speed_container.add_child(speed_label)
+
+# Enable/disable pause button (called when race starts/ends)
+func set_pause_enabled(enabled: bool):
+	pause_button.disabled = not enabled
+
+# Update pause button text based on state
+func set_pause_text(paused: bool):
+	pause_button.text = "Resume" if paused else "Pause"
+
+# Get current speed value
+func get_speed_value() -&gt; float:
+	return speed_slider.value
+
+# Set speed value programmatically
+func set_speed_value(value: float):
+	speed_slider.value = value
+	speed_label.text = "%.1fs" % value
+
+# Signal handlers
+func _on_start_pressed():
+	start_pressed.emit()
+
+func _on_pause_pressed():
+	pause_pressed.emit()
+
+func _on_speed_changed(value: float):
+	speed_label.text = "%.1fs" % value
+	speed_changed.emit(value)
+</document_content>
+  </document>
+  <document index="17">
+    <source>scripts\ui\RaceEventLog.gd</source>
+    <document_content># RaceEventLog.gd
+# Reusable race event logging component
+extends VBoxContainer
+class_name RaceEventLog
+
+@onready var output_log: RichTextLabel
+
+func _ready():
+	setup_ui()
+
+func setup_ui():
+	# Title
+	var log_title = Label.new()
+	log_title.text = "RACE LOG"
+	log_title.add_theme_font_size_override("font_size", 18)
+	add_child(log_title)
+	
+	# Rich text log
+	output_log = RichTextLabel.new()
+	output_log.bbcode_enabled = true
+	output_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	output_log.custom_minimum_size = Vector2(500, 400)
+	output_log.scroll_following = true
+	add_child(output_log)
+
+# === Core logging methods ===
+
+func clear():
+	output_log.clear()
+
+func append_text(text: String):
+	output_log.append_text(text)
+
+# === Specialized logging methods ===
+
+func log_race_start(circuit_name: String, total_laps: int):
+	output_log.clear()
+	output_log.append_text("[b][color=green]RACE STARTING![/color][/b]\n")
+	output_log.append_text("Circuit: %s - %d Laps\n\n" % [circuit_name, total_laps])
+
+func log_start_rolls(start_results: Array):
+	output_log.append_text("\n[b][color=cyan]🚦 RACE START - LAUNCH ROLLS![/color][/b]\n")
+	
+	for result in start_results:
+		var pilot = result["pilot"]
+		var roll = result["roll"]
+		var color = get_tier_color_name(roll.tier)
+		var effect = get_start_roll_effect(roll.tier)
+		
+		output_log.append_text("  %s: Twitch roll %d = [color=%s]%s[/color]%s\n" % [
+			pilot.name, roll.final_total, color, roll.tier_name, effect
+		])
+	
+	output_log.append_text("[b]Grid forms up... LIGHTS OUT AND AWAY WE GO![/b]\n")
+
+func log_round_started(round_num: int):
+	output_log.append_text("\n[b]Round %d[/b]\n" % round_num)
+
+func log_pilot_rolling(pilot_name: String, sector_name: String):
+	output_log.append_text("  %s approaching %s...\n" % [pilot_name, sector_name])
+
+func log_pilot_rolled(pilot_name: String, result: Dice.DiceResult):
+	var color = get_tier_color_name(result.tier)
+	output_log.append_text("    Roll: %d = [color=%s]%s[/color]\n" % [
+		result.final_total, color, result.tier_name
+	])
+
+func log_overtake_detected(overtaking_name: String, overtaken_name: String):
+	output_log.append_text("[b][color=yellow]⚡ OVERTAKE ATTEMPT! %s trying to pass %s![/color][/b]\n" % [
+		overtaking_name, overtaken_name
+	])
+
+func log_overtake_attempt(attacker_name: String, defender_name: String, attacker_roll: Dice.DiceResult, defender_roll: Dice.DiceResult):
+	output_log.append_text("  → %s rolls %d (Attack)\n" % [attacker_name, attacker_roll.final_total])
+	output_log.append_text("  ← %s rolls %d (Defend)\n" % [defender_name, defender_roll.final_total])
+
+func log_overtake_completed(overtaking_name: String, overtaken_name: String):
+	output_log.append_text("[color=green]  ✓ OVERTAKE SUCCESS! %s passes %s![/color]\n" % [
+		overtaking_name, overtaken_name
+	])
+
+func log_overtake_blocked(attacker_name: String, defender_name: String):
+	output_log.append_text("[color=red]  ✗ OVERTAKE BLOCKED! %s defends position from %s![/color]\n" % [
+		defender_name, attacker_name
+	])
+
+func log_sector_completed(pilot_name: String, sector_name: String):
+	output_log.append_text("  ✓ %s completes %s\n" % [pilot_name, sector_name])
+
+func log_lap_completed(pilot_name: String, lap_num: int):
+	output_log.append_text("[b][color=cyan]🏁 %s completes Lap %d![/color][/b]\n" % [
+		pilot_name, lap_num - 1
+	])
+
+func log_pilot_finished(pilot_name: String, finish_position: int):
+	var position_text = ["🥇", "🥈", "🥉", "🏁"]
+	var medal = position_text[min(finish_position - 1, 3)]
+	output_log.append_text("[b][color=gold]%s %s FINISHES in position %d! Taking victory lap![/color][/b]\n" % [
+		medal, pilot_name, finish_position
+	])
+
+func log_wheel_to_wheel(pilot1_name: String, pilot2_name: String):
+	output_log.append_text("[b][color=orange]⚠️ WHEEL-TO-WHEEL! %s vs %s![/color][/b]\n" % [
+		pilot1_name, pilot2_name
+	])
+
+func log_focus_mode(reason: String):
+	output_log.append_text("[b][color=red]🎯 FOCUS MODE: %s[/color][/b]\n" % reason)
+
+func log_race_finished(final_positions: Array):
+	output_log.append_text("\n[b][color=gold]🏆 RACE FINISHED![/color][/b]\n")
+	output_log.append_text("Final Results:\n")
+	for i in range(final_positions.size()):
+		var pilot = final_positions[i]
+		output_log.append_text("  %d. %s - %d Gap total\n" % [
+			i + 1, pilot.name, pilot.total_distance
+		])
+
+# === Helper methods ===
+
+func get_tier_color_name(tier: Dice.Tier) -&gt; String:
+	match tier:
+		Dice.Tier.RED: return "red"
+		Dice.Tier.GREY: return "gray"
+		Dice.Tier.GREEN: return "green"
+		Dice.Tier.PURPLE: return "purple"
+	return "white"
+
+func get_start_roll_effect(tier: Dice.Tier) -&gt; String:
+	match tier:
+		Dice.Tier.PURPLE:
+			return " - PERFECT LAUNCH! (+1 Gap)"
+		Dice.Tier.GREEN:
+			return " - Good start"
+		Dice.Tier.GREY:
+			return " - Average start"
+		Dice.Tier.RED:
+			return " - POOR START! (Disadvantage next roll)"
+	return ""
+</document_content>
+  </document>
+  <document index="18">
+    <source>resources\circuits\test_circuit.gd</source>
+    <document_content>extends Node
+</document_content>
+  </document>
+  <document index="19">
+    <source>scenes\main\main.tscn</source>
+    <document_content>[gd_scene format=3 uid="uid://cdj7j6tsfbp46"]
+
+[node name="Main" type="Node2D"]
+
+[node name="GameManager" type="Node" parent="."]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Container" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="RaceSimulator" type="Node" parent="."]
+</document_content>
+  </document>
+  <document index="20">
+    <source>scenes\tests\Test.tscn</source>
+    <document_content>[gd_scene load_steps=2 format=3 uid="uid://cnsgslqlovc5w"]
+
+[ext_resource type="Script" uid="uid://dqlhsgpxnpccf" path="res://scripts/tests/RaceTestScene.gd" id="1_xwoie"]
+
+[node name="Test" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_xwoie")
+</document_content>
+  </document>
+  <document index="21">
+    <source>scenes\ui\PilotStatusPanel.tscn</source>
+    <document_content>[gd_scene load_steps=2 format=3 uid="uid://55j2djceugtc"]
+
+[ext_resource type="Script" uid="uid://0c7nsvyvmf02" path="res://scripts/ui/PilotStatusPanel.gd" id="1"]
+
+[node name="PilotStatusPanel" type="VBoxContainer"]
+custom_minimum_size = Vector2(400, 0)
+offset_right = 400.0
+offset_bottom = 400.0
+script = ExtResource("1")
+</document_content>
+  </document>
+  <document index="22">
+    <source>scenes\ui\RaceControls.tscn</source>
+    <document_content>[gd_scene load_steps=2 format=3 uid="uid://race_controls"]
+
+[ext_resource type="Script" path="res://scripts/ui/RaceControls.gd" id="1"]
+
+[node name="RaceControls" type="HBoxContainer"]
+offset_right = 400.0
+offset_bottom = 40.0
+script = ExtResource("1")
+</document_content>
+  </document>
+  <document index="23">
+    <source>scenes\ui\RaceEventLog.tscn</source>
+    <document_content>[gd_scene load_steps=2 format=3 uid="uid://dwid0mbqb662w"]
+
+[ext_resource type="Script" uid="uid://davrq11srptho" path="res://scripts/ui/RaceEventLog.gd" id="1_mdcjv"]
+
+[node name="RaceEventLog" type="VBoxContainer"]
+offset_left = 500.0
+offset_top = 400.0
+offset_right = 500.0
+offset_bottom = 400.0
+script = ExtResource("1_mdcjv")
+</document_content>
+  </document>
+</documents>

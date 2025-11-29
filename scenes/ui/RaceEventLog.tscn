@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://dwid0mbqb662w"]
+
+[ext_resource type="Script" uid="uid://davrq11srptho" path="res://scripts/ui/RaceEventLog.gd" id="1_mdcjv"]
+
+[node name="RaceEventLog" type="VBoxContainer"]
+offset_left = 500.0
+offset_top = 400.0
+offset_right = 500.0
+offset_bottom = 400.0
+script = ExtResource("1_mdcjv")

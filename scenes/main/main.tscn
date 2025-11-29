@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://cdj7j6tsfbp46"]
+
+[node name="Main" type="Node2D"]
+
+[node name="GameManager" type="Node" parent="."]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Container" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="RaceSimulator" type="Node" parent="."]
