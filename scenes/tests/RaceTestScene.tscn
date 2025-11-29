@@ -61,9 +61,12 @@ size_flags_vertical = 3
 [node name="PilotStatusPanel" parent="MarginContainer/VBoxContainer/ContentSplit" instance=ExtResource("3_status")]
 layout_mode = 2
 
-[node name="CircuitDisplay" parent="MarginContainer/VBoxContainer/ContentSplit" instance=ExtResource("4_circuit")]
+[node name="RightSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer/ContentSplit"]
 layout_mode = 2
 
-[node name="RaceEventLog" parent="MarginContainer/VBoxContainer/ContentSplit" instance=ExtResource("5_log")]
+[node name="CircuitDisplay" parent="MarginContainer/VBoxContainer/ContentSplit/RightSplit" instance=ExtResource("4_circuit")]
+layout_mode = 2
+
+[node name="RaceEventLog" parent="MarginContainer/VBoxContainer/ContentSplit/RightSplit" instance=ExtResource("5_log")]
 layout_mode = 2
 
