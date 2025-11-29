@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dqlhsgpxnpccf" path="res://scripts/tests/RaceTestScene.gd" id="1_mxct0"]
 [ext_resource type="PackedScene" path="res://scenes/ui/RaceControls.tscn" id="2_controls"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PilotStatusPanel.tscn" id="3_status"]
-[ext_resource type="PackedScene" path="res://scenes/ui/CircuitDisplay.tscn" id="4_circuit"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PizzaCircuitDisplay.tscn" id="4_circuit"]
 [ext_resource type="PackedScene" path="res://scenes/ui/RaceEventLog.tscn" id="5_log"]
 
 [node name="RaceTestScene" type="Control"]

@@ -47,54 +47,8 @@ func setup_race_simulator():
 	race_sim.race_finished.connect(_on_race_finished)
 
 func create_test_circuit():
-	test_circuit = Circuit.new()
-	test_circuit.circuit_name = "Test Track Alpha"
-	test_circuit.total_laps = 10
-	
-	# Sector 1: Fast straight (STARTING GRID)
-	var s1 = Sector.new()
-	s1.sector_name = "Main Straight"
-	s1.length_in_gap = 6
-	s1.carrythru = 3
-	s1.check_type = "edge"
-	s1.grey_threshold = 8
-	s1.green_threshold = 13
-	s1.purple_threshold = 18
-	s1.red_movement = 1
-	s1.grey_movement = 2
-	s1.green_movement = 4
-	s1.purple_movement = 5
-	s1.is_start_sector = true  # This is the starting grid!
-	
-	# Sector 2: Technical section
-	var s2 = Sector.new()
-	s2.sector_name = "Technical Complex"
-	s2.length_in_gap = 5
-	s2.carrythru = 1
-	s2.check_type = "craft"
-	s2.grey_threshold = 10
-	s2.green_threshold = 15
-	s2.purple_threshold = 20
-	s2.red_movement = 0
-	s2.grey_movement = 2
-	s2.green_movement = 3
-	s2.purple_movement = 4
-	
-	# Sector 3: Twisty section
-	var s3 = Sector.new()
-	s3.sector_name = "Esses"
-	s3.length_in_gap = 4
-	s3.carrythru = 2
-	s3.check_type = "twitch"
-	s3.grey_threshold = 9
-	s3.green_threshold = 14
-	s3.purple_threshold = 19
-	s3.red_movement = 1
-	s3.grey_movement = 2
-	s3.green_movement = 3
-	s3.purple_movement = 4
-	
-	test_circuit.sectors = [s1, s2, s3]
+	# Load the Pizza Circuit resource
+	test_circuit = load("res://resources/circuits/pizza_circuit.tres")
 
 func setup_test_pilots():
 	var test_pilots = [
