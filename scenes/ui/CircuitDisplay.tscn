@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8vx3q2n1h4yk"]
+
+[ext_resource type="Script" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
+[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/testtrack.png" id="2_track"]
+
+[node name="CircuitDisplay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_circuit")
+
+[node name="TrackSprite" type="Sprite2D" parent="."]
+position = Vector2(256, 256)
+scale = Vector2(3, 3)
+texture = ExtResource("2_track")
+
+[node name="TrackPath" type="Path2D" parent="."]
+
+[node name="SectorMarkers" type="Node2D" parent="."]
+
+[node name="Sector1Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(150, 256)
+gizmo_extents = 10.0
+
+[node name="Sector2Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(362, 256)
+gizmo_extents = 10.0
+
+[node name="Sector3Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(362, 150)
+gizmo_extents = 10.0
+
+[node name="PilotContainer" type="Node2D" parent="."]
