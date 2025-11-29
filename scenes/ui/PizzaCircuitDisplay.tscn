@@ -1,0 +1,41 @@
+[gd_scene load_steps=4 format=3 uid="uid://pizza_display_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
+[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/pizza_triangle_placeholder.png" id="2_track"]
+
+[sub_resource type="Curve2D" id="Curve2D_triangle"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 256, 100, 0, 0, 0, 0, 400, 350, 0, 0, 0, 0, 112, 350, 0, 0, 0, 0, 256, 100)
+}
+point_count = 4
+
+[node name="CircuitDisplay" type="Control"]
+custom_minimum_size = Vector2(400, 300)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_circuit")
+
+[node name="TrackSprite" type="Sprite2D" parent="."]
+position = Vector2(256, 256)
+scale = Vector2(3, 3)
+texture = ExtResource("2_track")
+
+[node name="TrackPath" type="Path2D" parent="."]
+curve = SubResource("Curve2D_triangle")
+
+[node name="SectorMarkers" type="Node2D" parent="."]
+
+[node name="Sector1Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(256, 100)
+gizmo_extents = 10.0
+
+[node name="Sector2Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(400, 350)
+gizmo_extents = 10.0
+
+[node name="Sector3Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(112, 350)
+gizmo_extents = 10.0
+
+[node name="PilotContainer" type="Node2D" parent="."]
