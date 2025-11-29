@@ -40,12 +40,16 @@ func _ready():
 func setup_circuit(p_circuit: Circuit):
 	circuit = p_circuit
 	total_circuit_length = circuit.get_total_length()
+	print("DEBUG: Circuit setup - %s, Total length: %d" % [circuit.circuit_name, total_circuit_length])
 
 	# Note: The Path2D curve should be set up in the editor
 	# or you can generate it programmatically here if needed
 	if track_path.curve == null:
+		print("DEBUG: No curve found, generating default path")
 		track_path.curve = Curve2D.new()
 		_generate_default_path()
+	else:
+		print("DEBUG: Curve exists, length: %.2f" % track_path.curve.get_baked_length())
 
 ## Generate a default circular path (fallback if not set in editor)
 func _generate_default_path():
@@ -68,6 +72,8 @@ func _generate_default_path():
 
 ## Setup pilots on the track
 func setup_pilots(pilot_data: Array):
+	print("DEBUG: Setting up %d pilots" % pilot_data.size())
+
 	# Clear existing markers
 	for marker in pilot_markers.values():
 		marker.queue_free()
@@ -86,6 +92,7 @@ func setup_pilots(pilot_data: Array):
 
 		track_path.add_child(path_follow)
 		pilot_markers[i] = path_follow
+		print("DEBUG: Created marker for pilot %d (%s)" % [i, pilot.get("name", "Unknown")])
 
 ## Create a simple colored circle icon for a pilot using draw calls
 func _create_pilot_icon(pilot_index: int, pilot_name: String) -> Control:
@@ -136,9 +143,11 @@ func _create_pilot_icon(pilot_index: int, pilot_name: String) -> Control:
 ##   gap_in_sector: Progress within the current sector (0 to sector.length_in_gap)
 func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int, gap_in_sector: int):
 	if not pilot_markers.has(pilot_id):
+		print("WARNING: Pilot %d not found in pilot_markers" % pilot_id)
 		return
 
 	if total_circuit_length == 0:
+		print("WARNING: total_circuit_length is 0!")
 		return
 
 	# Calculate total progress along the circuit
@@ -153,6 +162,9 @@ func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int,
 	# Update the PathFollow2D position
 	var path_follow: PathFollow2D = pilot_markers[pilot_id]
 	path_follow.progress_ratio = progress_ratio
+
+	print("DEBUG: Pilot %d - Sector: %d, Gap: %d, Progress: %.2f (Total gap: %d/%d)" %
+		[pilot_id, current_sector, gap_in_sector, progress_ratio, progress_gap, total_circuit_length])
 
 ## Update all pilots from an array of PilotState objects
 func update_all_pilots(pilots: Array):
