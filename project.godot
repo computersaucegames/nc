@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 Events="*res://scripts/autoload/events.gd"
 Globals="*res://scripts/autoload/globals.gd"
 Dice="*res://scripts/autoload/DiceSystem.gd"
+FocusMode="*res://scripts/autoload/FocusModeManager.gd"
 
 [display]
 
