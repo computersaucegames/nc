@@ -56,6 +56,8 @@ func setup_pre_roll_display(pilot: PilotState, sector):
 
 ## Setup display with roll results
 func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int):
+	print("DEBUG: Setting up roll display for %s - tier: %s, movement: %d" % [pilot.name, roll_result.tier_name, movement])
+
 	pilot_name_label.text = pilot.name
 	sector_label.text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
 
