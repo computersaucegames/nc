@@ -84,6 +84,16 @@ func log_overtake_blocked(attacker_name: String, defender_name: String):
 		defender_name, attacker_name
 	])
 
+func log_capacity_blocked(pilot_name: String, blocking_pilots: Array, intended_movement: int, actual_movement: int):
+	var blocker_names = []
+	for blocker in blocking_pilots:
+		blocker_names.append(blocker.name)
+	var blockers_text = " & ".join(blocker_names)
+
+	output_log.append_text("[color=orange]  🚧 BLOCKED BY BATTLE! %s can't pass the wheel-to-wheel battle between %s! (Movement: %d → %d)[/color]\n" % [
+		pilot_name, blockers_text, intended_movement, actual_movement
+	])
+
 func log_sector_completed(pilot_name: String, sector_name: String):
 	output_log.append_text("  ✓ %s completes %s\n" % [pilot_name, sector_name])
 

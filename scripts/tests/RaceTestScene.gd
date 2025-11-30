@@ -40,6 +40,7 @@ func setup_race_simulator():
 	race_sim.overtake_attempt.connect(_on_overtake_attempt)
 	race_sim.overtake_completed.connect(_on_overtake_completed)
 	race_sim.overtake_blocked.connect(_on_overtake_blocked)
+	race_sim.capacity_blocked.connect(_on_capacity_blocked)
 	race_sim.sector_completed.connect(_on_sector_completed)
 	race_sim.lap_completed.connect(_on_lap_completed)
 	race_sim.pilot_finished.connect(_on_pilot_finished)
@@ -133,6 +134,9 @@ func _on_overtake_completed(overtaking, overtaken):
 
 func _on_overtake_blocked(attacker, defender):
 	race_log.log_overtake_blocked(attacker.name, defender.name)
+
+func _on_capacity_blocked(pilot, blocking_pilots: Array, intended_movement: int, actual_movement: int):
+	race_log.log_capacity_blocked(pilot.name, blocking_pilots, intended_movement, actual_movement)
 
 func _on_sector_completed(pilot, sector):
 	race_log.log_sector_completed(pilot.name, sector.sector_name)

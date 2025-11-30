@@ -18,6 +18,7 @@ signal overtake_detected(overtaking_pilot: PilotState, overtaken_pilot: PilotSta
 signal overtake_attempt(attacker: PilotState, defender: PilotState, attacker_roll: Dice.DiceResult, defender_roll: Dice.DiceResult)
 signal overtake_completed(overtaking_pilot: PilotState, overtaken_pilot: PilotState)
 signal overtake_blocked(attacker: PilotState, defender: PilotState)
+signal capacity_blocked(pilot: PilotState, blocking_pilots: Array, intended_movement: int, actual_movement: int)
 signal sector_completed(pilot: PilotState, sector: Sector)
 signal lap_completed(pilot: PilotState, lap_number: int)
 signal pilot_finished(pilot: PilotState, finish_position: int)
@@ -260,17 +261,17 @@ func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -
 	var target_sector = pilot.current_sector
 
 	# Count how many other pilots are already at this exact position
-	var pilots_at_target = 0
+	var pilots_at_target = []
 	for other in pilots:
 		if other == pilot or other.finished:
 			continue
 
 		# Check if other pilot is at the target position
 		if other.current_sector == target_sector and other.gap_in_sector == target_gap:
-			pilots_at_target += 1
+			pilots_at_target.append(other)
 
 	# If we've reached capacity, block this pilot from moving into that position
-	if pilots_at_target >= sector.max_side_by_side:
+	if pilots_at_target.size() >= sector.max_side_by_side:
 		# Reduce movement to stay one gap behind
 		var adjusted_movement = max(0, movement - 1)
 		# Make sure we don't end up at the same position
@@ -287,6 +288,8 @@ func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -
 				break  # Found a valid position
 			adjusted_movement -= 1
 
+		# Emit signal that this pilot was blocked by capacity
+		capacity_blocked.emit(pilot, pilots_at_target, movement, adjusted_movement)
 		return adjusted_movement
 
 	return movement
