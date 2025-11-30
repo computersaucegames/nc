@@ -25,7 +25,7 @@ var total_circuit_length: int = 0
 const PILOT_ICON_SIZE = 16
 const MOVEMENT_ANIMATION_DURATION = 0.3  # Seconds for smooth pod movement
 const OVERLAP_THRESHOLD = 0.02  # How close pilots need to be to count as overlapping (2% of track)
-const LATERAL_OFFSET_DISTANCE = 50.0  # Pixels to offset sideways when overlapping
+const LATERAL_OFFSET_DISTANCE = 10.0  # Pixels to offset sideways when overlapping
 
 # Pod racer sprites for pilot icons
 const POD_SPRITES = [
@@ -277,8 +277,8 @@ func _apply_overlap_offsets():
 ## Returns a signed distance value applied perpendicular to the track
 func _calculate_lateral_offset(index: int, total: int) -> float:
 	# Center the group around 0
-	# For 2 pilots: -25, +25 (pixels perpendicular to track)
-	# For 3 pilots: -50, 0, +50
-	# For 4 pilots: -75, -25, +25, +75
+	# For 2 pilots: -5, +5 (pixels perpendicular to track)
+	# For 3 pilots: -10, 0, +10
+	# For 4 pilots: -15, -5, +5, +15
 	var half_width = (total - 1) * LATERAL_OFFSET_DISTANCE / 2.0
 	return (index * LATERAL_OFFSET_DISTANCE) - half_width

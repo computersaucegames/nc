@@ -14,6 +14,7 @@ var current_lap: int = 1
 var total_distance: int = 0  # Total Gap traveled (for position)
 var position: int = 1
 var finished: bool = false  # Track if pilot has finished the race
+var finish_round: int = 0  # Round number when pilot finished
 
 # Status flags
 var is_clear_air: bool = true
@@ -98,7 +99,8 @@ func clear_statuses() -> void:
 	wheel_to_wheel_with.clear()
 
 # Mark as finished
-func finish_race(finish_position: int) -> void:
+func finish_race(finish_position: int, round_number: int = 0) -> void:
 	finished = true
 	clear_statuses()
 	position = finish_position
+	finish_round = round_number

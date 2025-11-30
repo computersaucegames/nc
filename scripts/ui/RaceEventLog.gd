@@ -112,8 +112,8 @@ func log_race_finished(final_positions: Array):
 	output_log.append_text("Final Results:\n")
 	for i in range(final_positions.size()):
 		var pilot = final_positions[i]
-		output_log.append_text("  %d. %s - %d Gap total\n" % [
-			i + 1, pilot.name, pilot.total_distance
+		output_log.append_text("  %d. %s - Finished Round %d\n" % [
+			i + 1, pilot.name, pilot.finish_round
 		])
 
 # === Helper methods ===
