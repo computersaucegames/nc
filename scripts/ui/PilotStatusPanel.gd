@@ -102,33 +102,41 @@ func update_all_pilots(pilots: Array):
 
 	# Update display content for all pilots
 	for pilot in sorted_pilots:
-		update_pilot_display(pilot)
+		update_pilot_display(pilot, sorted_pilots)
 
 # Update a single pilot's display
-func update_pilot_display(pilot):
+func update_pilot_display(pilot, all_pilots: Array):
 	if not pilot.name in pilot_labels:
 		return
 
 	var label = pilot_labels[pilot.name]["label"]
 	var color = get_position_color(pilot.position)
-	
+
 	var sector_name = ""
 	if circuit and pilot.current_sector < circuit.sectors.size():
 		sector_name = circuit.sectors[pilot.current_sector].sector_name
-	
+
+	# Calculate gap to pilot in front (same lap only)
+	var gap_to_front = _calculate_gap_to_front(pilot, all_pilots)
+
 	label.clear()
 	label.append_text("[b][color=%s]P%d - %s[/color][/b]\n" % [color, pilot.position, pilot.name])
-	
+
 	if pilot.finished:
 		label.append_text("[color=green]FINISHED - Victory Lap![/color]\n")
 	else:
 		label.append_text("Lap %d/%d | Sector: %s\n" % [
 			pilot.current_lap, circuit.total_laps, sector_name
 		])
+
+		# Show gap to pilot in front if available
+		if gap_to_front != null:
+			label.append_text("[color=yellow]Gap to P%d: %d[/color]\n" % [pilot.position - 1, gap_to_front])
+
 		label.append_text("Progress: %d Gap | Status: %s" % [
 			pilot.gap_in_sector, pilot.get_status_string()
 		])
-		
+
 		# Add color coding for status
 		if pilot.is_in_train:
 			label.append_text(" [color=red]⚠[/color]")
@@ -138,6 +146,28 @@ func update_pilot_display(pilot):
 			label.append_text(" [color=yellow]→[/color]")
 		elif pilot.is_defending:
 			label.append_text(" [color=cyan]←[/color]")
+
+# Calculate gap to the pilot in front (same lap only)
+# Returns the gap in distance units, or null if not applicable
+func _calculate_gap_to_front(pilot, all_pilots: Array) -> Variant:
+	# No gap if in first place
+	if pilot.position == 1:
+		return null
+
+	# Find the pilot directly in front (position - 1)
+	for other_pilot in all_pilots:
+		if other_pilot.position == pilot.position - 1:
+			# Only show gap if on the same lap
+			if other_pilot.current_lap == pilot.current_lap:
+				# Gap is the difference in total distance
+				var gap = other_pilot.total_distance - pilot.total_distance
+				return gap
+			else:
+				# Different lap - don't show gap
+				return null
+
+	# Couldn't find pilot in front
+	return null
 
 # Get color based on position
 func get_position_color(position: int) -> String:

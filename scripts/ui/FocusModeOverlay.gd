@@ -90,6 +90,11 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 		print("WARNING: No circuit display set for FocusModeOverlay")
 		return
 
+	# Track panel positions to prevent overlaps
+	var placed_panels: Array[Rect2] = []
+	const PANEL_SIZE = Vector2(280, 400)
+	const PANEL_BUFFER = 20.0  # Pixels of spacing between panels
+
 	# Get pilot positions on screen
 	for pilot_idx in range(event.pilots.size()):
 		var pilot = event.pilots[pilot_idx]
@@ -108,8 +113,35 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 		roll_panel_container.add_child(panel)
 
 		# Position panel near the pilot (offset to avoid covering them)
-		var offset = Vector2(60 if pilot_idx == 0 else -260, -100)
-		panel.position = screen_pos + offset
+		var base_offset = Vector2(60 if pilot_idx == 0 else -260, -100)
+		var final_position = screen_pos + base_offset
+
+		# Check for overlaps with existing panels and adjust if needed
+		var panel_rect = Rect2(final_position, PANEL_SIZE)
+		var adjusted = false
+		var max_attempts = 20  # Prevent infinite loops
+
+		for attempt in range(max_attempts):
+			var overlapping = false
+			for existing_rect in placed_panels:
+				# Check if panels overlap (with buffer zone)
+				var buffered_rect = existing_rect.grow(PANEL_BUFFER)
+				if buffered_rect.intersects(panel_rect):
+					overlapping = true
+					break
+
+			if not overlapping:
+				break
+
+			# Move panel down to avoid overlap
+			final_position.y += PANEL_SIZE.y / 4  # Move down by quarter panel height
+			panel_rect.position = final_position
+			adjusted = true
+
+		# Store this panel's rect for future overlap checks
+		placed_panels.append(panel_rect)
+
+		panel.position = final_position
 
 		# Setup panel data
 		if event.roll_results.size() > pilot_idx:
