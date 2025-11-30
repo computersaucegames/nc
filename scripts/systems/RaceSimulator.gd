@@ -171,24 +171,27 @@ func process_round():
 # Process a single pilot's turn
 func process_pilot_turn(pilot: PilotState):
 	var sector = current_circuit.sectors[pilot.current_sector]
-	
+
 	# Emit that pilot is about to roll
 	pilot_rolling.emit(pilot, sector)
-	
+
 	# Make the sector roll
 	var roll_result = make_pilot_roll(pilot, sector)
 	pilot_rolled.emit(pilot, roll_result)
-	
+
 	# Calculate base movement
 	var base_movement = MoveProc.calculate_base_movement(sector, roll_result)
-	
+
 	# Handle overtaking
 	var final_movement = handle_overtaking(pilot, base_movement, sector)
-	
+
+	# Check for capacity blocking
+	final_movement = check_capacity_blocking(pilot, final_movement, sector)
+
 	# Apply movement
 	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
 	pilot_moved.emit(pilot, final_movement)
-	
+
 	# Handle sector/lap completion
 	handle_movement_results(pilot, move_result)
 
@@ -245,6 +248,48 @@ func handle_overtaking(pilot: PilotState, base_movement: int, sector: Sector) ->
 			overtake_blocked.emit(pilot, defender)
 	
 	return overtake_chain["final_movement"]
+
+# Check if the target position has reached capacity (max fins side-by-side)
+# If blocked, reduce movement to stay one gap behind the blocking fins
+func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -> int:
+	if movement <= 0:
+		return movement
+
+	# Calculate where the pilot would end up
+	var target_gap = pilot.gap_in_sector + movement
+	var target_sector = pilot.current_sector
+
+	# Count how many other pilots are already at this exact position
+	var pilots_at_target = 0
+	for other in pilots:
+		if other == pilot or other.finished:
+			continue
+
+		# Check if other pilot is at the target position
+		if other.current_sector == target_sector and other.gap_in_sector == target_gap:
+			pilots_at_target += 1
+
+	# If we've reached capacity, block this pilot from moving into that position
+	if pilots_at_target >= sector.max_side_by_side:
+		# Reduce movement to stay one gap behind
+		var adjusted_movement = max(0, movement - 1)
+		# Make sure we don't end up at the same position
+		while adjusted_movement > 0:
+			var new_target = pilot.gap_in_sector + adjusted_movement
+			var count_at_new_target = 0
+			for other in pilots:
+				if other == pilot or other.finished:
+					continue
+				if other.current_sector == target_sector and other.gap_in_sector == new_target:
+					count_at_new_target += 1
+
+			if count_at_new_target < sector.max_side_by_side:
+				break  # Found a valid position
+			adjusted_movement -= 1
+
+		return adjusted_movement
+
+	return movement
 
 # Handle the results of movement (sectors, laps, finishing)
 func handle_movement_results(pilot: PilotState, move_result):
@@ -378,12 +423,16 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 
 	# Handle overtaking for pilot1
 	var final_movement1 = handle_overtaking(pilot1, movement1, sector)
+	# Check for capacity blocking
+	final_movement1 = check_capacity_blocking(pilot1, final_movement1, sector)
 	var move_result1 = MoveProc.apply_movement(pilot1, final_movement1, current_circuit)
 	pilot_moved.emit(pilot1, final_movement1)
 	handle_movement_results(pilot1, move_result1)
 
 	# Handle overtaking for pilot2
 	var final_movement2 = handle_overtaking(pilot2, movement2, sector)
+	# Check for capacity blocking
+	final_movement2 = check_capacity_blocking(pilot2, final_movement2, sector)
 	var move_result2 = MoveProc.apply_movement(pilot2, final_movement2, current_circuit)
 	pilot_moved.emit(pilot2, final_movement2)
 	handle_movement_results(pilot2, move_result2)
