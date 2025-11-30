@@ -56,9 +56,11 @@ func setup_pilots(pilot_data: Array):
 
 		# Add sprite
 		var sprite = TextureRect.new()
-		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		sprite.custom_minimum_size = Vector2(32, 32)
+		sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.custom_minimum_size = Vector2(24, 24)
+		sprite.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		sprite.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var pod_index = p_idx % POD_SPRITES.size()
 		sprite.texture = load(POD_SPRITES[pod_index])
 		sprite.modulate = PILOT_COLORS[p_idx % PILOT_COLORS.size()]
@@ -147,15 +149,20 @@ func get_position_color(position: int) -> String:
 
 # Animate a pilot label when its position changes
 func animate_position_change(container: HBoxContainer):
+	# Get the label from the container (not the sprite, to avoid modulate conflicts)
+	var label = container.get_child(1) if container.get_child_count() > 1 else null
+	if label == null:
+		return
+
 	# Create a brief highlight animation to show movement
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Flash effect with a bright highlight
-	container.modulate = Color(1.5, 1.5, 1.0)  # Bright yellow
-	tween.tween_property(container, "modulate", Color.WHITE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	# Flash effect with a bright highlight (only on the label, not the sprite)
+	label.modulate = Color(1.5, 1.5, 1.0)  # Bright yellow
+	tween.tween_property(label, "modulate", Color.WHITE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
-	# Scale pulse effect
+	# Scale pulse effect on the whole container
 	var original_scale = container.scale
-	container.scale = Vector2(1.05, 1.05)
+	container.scale = Vector2(1.02, 1.02)  # Reduced from 1.05 to prevent overflow
 	tween.tween_property(container, "scale", original_scale, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
