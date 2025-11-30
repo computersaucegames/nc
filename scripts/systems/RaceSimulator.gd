@@ -109,6 +109,9 @@ func resume_race():
 # Track W2W pairs already processed in Focus Mode this round
 var processed_w2w_pairs: Array = []
 
+# Current Focus Mode advance callback (to disconnect when done)
+var current_focus_advance_callback: Callable
+
 # Process a single round of racing
 func process_round():
 	if race_mode != RaceMode.RUNNING:
@@ -305,10 +308,10 @@ func process_w2w_focus_mode(pilot1: PilotState, pilot2: PilotState):
 	# Enter Focus Mode state
 	race_mode = RaceMode.FOCUS_MODE
 
-	# Connect to Focus Mode advance signal (disconnect after use)
-	var on_advance = func():
+	# Connect to Focus Mode advance signal (store for manual disconnect later)
+	current_focus_advance_callback = func():
 		_on_focus_mode_advance(pilot1, pilot2, event)
-	FocusMode.focus_mode_advance_requested.connect(on_advance, CONNECT_ONE_SHOT)
+	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
 
 	# Activate Focus Mode (UI will display)
 	FocusMode.activate(event)
@@ -322,6 +325,11 @@ func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: Focus
 	else:
 		# Stage 2: Rolls are done, apply movement and deactivate
 		_apply_w2w_movement(pilot1, pilot2, event)
+
+		# Disconnect the advance callback
+		if current_focus_advance_callback.is_valid():
+			FocusMode.focus_mode_advance_requested.disconnect(current_focus_advance_callback)
+
 		FocusMode.deactivate()
 		race_mode = RaceMode.RUNNING
 
