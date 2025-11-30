@@ -41,7 +41,25 @@ func set_circuit(race_circuit: Circuit):
 
 # Update all pilot displays from a list of pilot states
 func update_all_pilots(pilots: Array):
-	for pilot in pilots:
+	# Sort pilots by position (ascending - 1st place at top)
+	var sorted_pilots = pilots.duplicate()
+	sorted_pilots.sort_custom(func(a, b): return a.position < b.position)
+
+	# Reorder labels to match sorted order with animation
+	for i in range(sorted_pilots.size()):
+		var pilot = sorted_pilots[i]
+		if pilot.name in pilot_labels:
+			var label = pilot_labels[pilot.name]
+			var current_index = label.get_index()
+			var target_index = i + 1  # +1 to account for title label
+
+			# If position changed, animate the movement
+			if current_index != target_index:
+				animate_position_change(label)
+				move_child(label, target_index)
+
+	# Update display content for all pilots
+	for pilot in sorted_pilots:
 		update_pilot_display(pilot)
 
 # Update a single pilot's display
@@ -86,3 +104,18 @@ func get_position_color(position: int) -> String:
 		2: return "silver"
 		3: return "orange"
 	return "white"
+
+# Animate a pilot label when its position changes
+func animate_position_change(label: RichTextLabel):
+	# Create a brief highlight animation to show movement
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	# Flash effect with a bright highlight
+	label.modulate = Color(1.5, 1.5, 1.0)  # Bright yellow
+	tween.tween_property(label, "modulate", Color.WHITE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+	# Scale pulse effect
+	var original_scale = label.scale
+	label.scale = Vector2(1.05, 1.05)
+	tween.tween_property(label, "scale", original_scale, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
