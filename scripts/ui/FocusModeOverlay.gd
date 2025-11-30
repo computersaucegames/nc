@@ -8,6 +8,9 @@ class_name FocusModeOverlay
 @onready var roll_panel_container: Control = $RollPanelContainer
 @onready var continue_prompt: Label = $ContinuePrompt
 
+# Reference to FocusMode autoload
+var focus_mode_manager: Node
+
 # Reference to the circuit display (to get pilot positions)
 var circuit_display: CircuitDisplay = null
 
@@ -25,12 +28,15 @@ var current_stage: DisplayStage = DisplayStage.SHOWING_ROLLS
 var pilot_roll_panel_scene = preload("res://scenes/ui/FocusModeRollPanel.tscn")
 
 func _ready():
+	# Get reference to FocusMode autoload
+	focus_mode_manager = get_node("/root/FocusMode")
+
 	# Start hidden
 	visible = false
 
 	# Connect to Focus Mode manager
-	FocusMode.focus_mode_activated.connect(_on_focus_mode_activated)
-	FocusMode.focus_mode_deactivated.connect(_on_focus_mode_deactivated)
+	focus_mode_manager.focus_mode_activated.connect(_on_focus_mode_activated)
+	focus_mode_manager.focus_mode_deactivated.connect(_on_focus_mode_deactivated)
 
 	# Setup input handling
 	set_process_input(true)
@@ -48,7 +54,7 @@ func _input(event):
 		get_viewport().set_input_as_handled()
 
 func _advance_focus_mode():
-	FocusMode.advance()
+	focus_mode_manager.advance()
 
 func _on_focus_mode_activated(event: FocusModeManager.FocusModeEvent):
 	current_event = event
