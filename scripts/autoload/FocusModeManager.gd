@@ -1,6 +1,7 @@
 # FocusModeManager.gd
 # Autoload singleton to manage Focus Mode state and events
 extends Node
+class_name FocusModeManager
 
 # Focus Mode signals
 signal focus_mode_activated(event_data: FocusModeEvent)
