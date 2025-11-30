@@ -109,6 +109,9 @@ func resume_race():
 # Track W2W pairs already processed in Focus Mode this round
 var processed_w2w_pairs: Array = []
 
+# Track individual pilots who have already moved this round
+var pilots_processed_this_round: Array = []
+
 # Current Focus Mode advance callback (to disconnect when done)
 var current_focus_advance_callback: Callable
 
@@ -120,8 +123,9 @@ func process_round():
 	current_round += 1
 	round_started.emit(current_round)
 
-	# Clear processed W2W pairs for this round
+	# Clear processed tracking for this round
 	processed_w2w_pairs.clear()
+	pilots_processed_this_round.clear()
 
 	# Update positions
 	MoveProc.update_all_positions(pilots)
@@ -142,6 +146,10 @@ func process_round():
 		if not MoveProc.can_pilot_race(pilot):
 			continue
 
+		# Skip if this pilot already moved this round
+		if pilot in pilots_processed_this_round:
+			continue
+
 		# Check if this pilot is in a W2W situation
 		var w2w_partner = get_unprocessed_w2w_partner(pilot, wheel_to_wheel_pairs)
 		if w2w_partner != null:
@@ -150,6 +158,8 @@ func process_round():
 		else:
 			# Normal turn processing
 			process_pilot_turn(pilot)
+			# Mark pilot as processed
+			pilots_processed_this_round.append(pilot)
 
 	# Check for race finish
 	if check_race_finished():
@@ -374,6 +384,10 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 	var move_result2 = MoveProc.apply_movement(pilot2, final_movement2, current_circuit)
 	pilot_moved.emit(pilot2, final_movement2)
 	handle_movement_results(pilot2, move_result2)
+
+	# Mark both pilots as processed for this round
+	pilots_processed_this_round.append(pilot1)
+	pilots_processed_this_round.append(pilot2)
 
 # Exit focus mode and continue racing
 func exit_focus_mode():
