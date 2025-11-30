@@ -116,6 +116,9 @@ var pilots_processed_this_round: Array = []
 # Current Focus Mode advance callback (to disconnect when done)
 var current_focus_advance_callback: Callable
 
+# Track wheel-to-wheel pairs for the current round (persists during focus mode)
+var current_round_w2w_pairs: Array = []
+
 # Process a single round of racing
 func process_round():
 	if race_mode != RaceMode.RUNNING:
@@ -135,14 +138,30 @@ func process_round():
 	StatusCalc.calculate_all_statuses(pilots)
 
 	# Check for wheel-to-wheel situations
-	var wheel_to_wheel_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
-	for pair in wheel_to_wheel_pairs:
+	current_round_w2w_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
+	for pair in current_round_w2w_pairs:
 		wheel_to_wheel_detected.emit(pair[0], pair[1])
 
+	# Process pilots starting from index 0
+	_process_pilots_from_index(0)
+
+# Resume processing pilots after Focus Mode
+func resume_round():
+	# Update positions and statuses after W2W resolution
+	MoveProc.update_all_positions(pilots)
+	StatusCalc.calculate_all_statuses(pilots)
+
+	# Continue processing remaining pilots
+	_process_pilots_from_index(0)  # Will skip already-processed pilots
+
+# Internal function to process pilots starting from a given index
+func _process_pilots_from_index(start_index: int):
 	# Process each pilot in position order
-	for pilot in pilots:
+	for i in range(start_index, pilots.size()):
+		var pilot = pilots[i]
+
 		if race_mode != RaceMode.RUNNING:
-			break
+			return  # Exit if mode changed (Focus Mode triggered)
 
 		if not MoveProc.can_pilot_race(pilot):
 			continue
@@ -152,17 +171,18 @@ func process_round():
 			continue
 
 		# Check if this pilot is in a W2W situation
-		var w2w_partner = get_unprocessed_w2w_partner(pilot, wheel_to_wheel_pairs)
+		var w2w_partner = get_unprocessed_w2w_partner(pilot, current_round_w2w_pairs)
 		if w2w_partner != null:
 			# Trigger Focus Mode for this W2W pair
 			process_w2w_focus_mode(pilot, w2w_partner)
+			return  # Exit - will resume after Focus Mode completes
 		else:
 			# Normal turn processing
 			process_pilot_turn(pilot)
 			# Mark pilot as processed
 			pilots_processed_this_round.append(pilot)
 
-	# Check for race finish
+	# All pilots processed - check for race finish
 	if check_race_finished():
 		finish_race()
 	else:
@@ -391,8 +411,8 @@ func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: Focus
 		FocusMode.deactivate()
 		race_mode = RaceMode.RUNNING
 
-		# Resume auto-advance by starting next round
-		auto_advance_timer.start(auto_advance_delay)
+		# Resume the current round to process remaining pilots
+		resume_round()
 
 # Execute rolls for both W2W pilots
 func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
