@@ -61,6 +61,7 @@ func start_race(circuit: Circuit, pilot_list: Array):
 	pilots.clear()
 	for i in range(pilot_list.size()):
 		var pilot_state = PilotState.new()
+		pilot_state.pilot_id = i  # Set the pilot ID for UI tracking
 		pilot_state.setup_from_dict(pilot_list[i], i + 1)
 		pilots.append(pilot_state)
 	
@@ -105,35 +106,48 @@ func resume_race():
 		race_mode = RaceMode.RUNNING
 		process_round()
 
+# Track W2W pairs already processed in Focus Mode this round
+var processed_w2w_pairs: Array = []
+
 # Process a single round of racing
 func process_round():
 	if race_mode != RaceMode.RUNNING:
 		return
-	
+
 	current_round += 1
 	round_started.emit(current_round)
-	
+
+	# Clear processed W2W pairs for this round
+	processed_w2w_pairs.clear()
+
 	# Update positions
 	MoveProc.update_all_positions(pilots)
-	
+
 	# Calculate all pilot statuses
 	StatusCalc.calculate_all_statuses(pilots)
-	
+
 	# Check for wheel-to-wheel situations
 	var wheel_to_wheel_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
 	for pair in wheel_to_wheel_pairs:
 		wheel_to_wheel_detected.emit(pair[0], pair[1])
-	
+
 	# Process each pilot in position order
 	for pilot in pilots:
 		if race_mode != RaceMode.RUNNING:
 			break
-		
+
 		if not MoveProc.can_pilot_race(pilot):
 			continue
-			
-		process_pilot_turn(pilot)
-	
+
+		# Check if this pilot is in a W2W situation
+		var w2w_partner = get_unprocessed_w2w_partner(pilot, wheel_to_wheel_pairs)
+		if w2w_partner != null:
+			# Trigger Focus Mode for this W2W pair
+			process_w2w_focus_mode(pilot, w2w_partner)
+		else:
+			# Normal turn processing
+			process_pilot_turn(pilot)
+
 	# Check for race finish
 	if check_race_finished():
 		finish_race()
@@ -258,6 +272,100 @@ func finish_race():
 	
 	var final_positions = MoveProc.get_finish_order(pilots)
 	race_finished.emit(final_positions)
+
+# Get W2W partner if not already processed
+func get_unprocessed_w2w_partner(pilot: PilotState, w2w_pairs: Array):
+	for pair in w2w_pairs:
+		if pair[0] == pilot or pair[1] == pilot:
+			# Check if this pair was already processed
+			var pair_key = _get_pair_key(pair[0], pair[1])
+			if pair_key not in processed_w2w_pairs:
+				# Return the partner
+				return pair[1] if pair[0] == pilot else pair[0]
+	return null
+
+# Generate unique key for a pilot pair
+func _get_pair_key(pilot1: PilotState, pilot2: PilotState) -> String:
+	var names = [pilot1.name, pilot2.name]
+	names.sort()
+	return names[0] + "_" + names[1]
+
+# Process wheel-to-wheel situation in Focus Mode
+func process_w2w_focus_mode(pilot1: PilotState, pilot2: PilotState):
+	# Mark this pair as processed
+	var pair_key = _get_pair_key(pilot1, pilot2)
+	processed_w2w_pairs.append(pair_key)
+
+	# Get the sector for both pilots (should be same)
+	var sector = current_circuit.sectors[pilot1.current_sector]
+
+	# Create Focus Mode event
+	var event = FocusMode.create_wheel_to_wheel_event(pilot1, pilot2, sector)
+
+	# Enter Focus Mode state
+	race_mode = RaceMode.FOCUS_MODE
+
+	# Connect to Focus Mode advance signal (disconnect after use)
+	var on_advance = func():
+		_on_focus_mode_advance(pilot1, pilot2, event)
+	FocusMode.focus_mode_advance_requested.connect(on_advance, CONNECT_ONE_SHOT)
+
+	# Activate Focus Mode (UI will display)
+	FocusMode.activate(event)
+
+# Handle Focus Mode advancement (player clicked continue)
+func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
+	# Check what stage we're in
+	if event.roll_results.size() == 0:
+		# Stage 1: Show the rolls
+		_execute_w2w_rolls(pilot1, pilot2, event)
+	else:
+		# Stage 2: Rolls are done, apply movement and deactivate
+		_apply_w2w_movement(pilot1, pilot2, event)
+		FocusMode.deactivate()
+		race_mode = RaceMode.RUNNING
+
+# Execute rolls for both W2W pilots
+func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
+	var sector = event.sector
+
+	# Roll for both pilots
+	pilot_rolling.emit(pilot1, sector)
+	var roll1 = make_pilot_roll(pilot1, sector)
+	pilot_rolled.emit(pilot1, roll1)
+
+	pilot_rolling.emit(pilot2, sector)
+	var roll2 = make_pilot_roll(pilot2, sector)
+	pilot_rolled.emit(pilot2, roll2)
+
+	# Store rolls in event
+	event.roll_results = [roll1, roll2]
+
+	# Calculate movement outcomes
+	var movement1 = MoveProc.calculate_base_movement(sector, roll1)
+	var movement2 = MoveProc.calculate_base_movement(sector, roll2)
+	event.movement_outcomes = [movement1, movement2]
+
+	# Re-emit event to update UI with roll results
+	FocusMode.focus_mode_activated.emit(event)
+
+# Apply movement for W2W pilots after rolls shown
+func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
+	var sector = event.sector
+	var movement1 = event.movement_outcomes[0]
+	var movement2 = event.movement_outcomes[1]
+
+	# Handle overtaking for pilot1
+	var final_movement1 = handle_overtaking(pilot1, movement1, sector)
+	var move_result1 = MoveProc.apply_movement(pilot1, final_movement1, current_circuit)
+	pilot_moved.emit(pilot1, final_movement1)
+	handle_movement_results(pilot1, move_result1)
+
+	# Handle overtaking for pilot2
+	var final_movement2 = handle_overtaking(pilot2, movement2, sector)
+	var move_result2 = MoveProc.apply_movement(pilot2, final_movement2, current_circuit)
+	pilot_moved.emit(pilot2, final_movement2)
+	handle_movement_results(pilot2, move_result2)
 
 # Exit focus mode and continue racing
 func exit_focus_mode():

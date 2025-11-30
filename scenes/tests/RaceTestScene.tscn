@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://dpr8gyat38aq1"]
+[gd_scene load_steps=7 format=3 uid="uid://dpr8gyat38aq1"]
 
 [ext_resource type="Script" uid="uid://dqlhsgpxnpccf" path="res://scripts/tests/RaceTestScene.gd" id="1_mxct0"]
 [ext_resource type="PackedScene" path="res://scenes/ui/RaceControls.tscn" id="2_controls"]
 [ext_resource type="PackedScene" uid="uid://55j2djceugtc" path="res://scenes/ui/PilotStatusPanel.tscn" id="3_status"]
 [ext_resource type="PackedScene" uid="uid://d22ihwa0ff46w" path="res://scenes/ui/PizzaCircuitDisplay.tscn" id="4_circuit"]
 [ext_resource type="PackedScene" uid="uid://dwid0mbqb662w" path="res://scenes/ui/RaceEventLog.tscn" id="5_log"]
+[ext_resource type="PackedScene" uid="uid://c3k9p2m5tn8x" path="res://scenes/ui/FocusModeOverlay.tscn" id="6_focus"]
 
 [node name="RaceTestScene" type="Control"]
 layout_mode = 3
@@ -69,3 +70,6 @@ layout_mode = 2
 
 [node name="RaceEventLog" parent="MarginContainer/VBoxContainer/ContentSplit/RightSplit" instance=ExtResource("5_log")]
 layout_mode = 2
+
+[node name="FocusModeOverlay" parent="." instance=ExtResource("6_focus")]
+layout_mode = 1

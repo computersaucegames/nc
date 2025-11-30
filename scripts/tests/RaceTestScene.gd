@@ -5,6 +5,7 @@ extends Control
 @onready var pilot_status_panel: PilotStatusPanel = $MarginContainer/VBoxContainer/ContentSplit/PilotStatusPanel
 @onready var circuit_display: CircuitDisplay = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/CircuitDisplay
 @onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/RaceEventLog
+@onready var focus_mode_overlay: FocusModeOverlay = $FocusModeOverlay
 
 # Race simulator (created programmatically)
 var race_sim: RaceSimulator
@@ -65,6 +66,9 @@ func setup_test_pilots():
 	# CHANGED: Setup circuit display with circuit and pilots
 	circuit_display.setup_circuit(test_circuit)
 	circuit_display.setup_pilots(test_pilots)
+
+	# Setup Focus Mode overlay with circuit display reference
+	focus_mode_overlay.set_circuit_display(circuit_display)
 
 func _on_start_pressed():
 	# CHANGED: Use race_log method instead of direct output_log calls

@@ -4,6 +4,7 @@ class_name PilotState
 
 # Core pilot data
 var pilot_data: Resource  # Will be the full Pilot resource later
+var pilot_id: int = 0  # Index in the pilots array (for UI tracking)
 var name: String = "Unknown"
 
 # Race position data
