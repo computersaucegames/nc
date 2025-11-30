@@ -267,8 +267,8 @@ func handle_pilot_finish(pilot: PilotState):
 	for other in pilots:
 		if other.finished and other != pilot:
 			finish_position += 1
-	
-	pilot.finish_race(finish_position)
+
+	pilot.finish_race(finish_position, current_round)
 	pilot_finished.emit(pilot, finish_position)
 
 # Check if all pilots have finished
