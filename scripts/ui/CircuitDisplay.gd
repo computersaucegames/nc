@@ -25,7 +25,7 @@ var total_circuit_length: int = 0
 const PILOT_ICON_SIZE = 16
 const MOVEMENT_ANIMATION_DURATION = 0.3  # Seconds for smooth pod movement
 const OVERLAP_THRESHOLD = 0.02  # How close pilots need to be to count as overlapping (2% of track)
-const LATERAL_OFFSET_DISTANCE = 20.0  # Pixels to offset sideways when overlapping
+const LATERAL_OFFSET_DISTANCE = 50.0  # Pixels to offset sideways when overlapping
 
 # Pod racer sprites for pilot icons
 const POD_SPRITES = [
@@ -98,7 +98,7 @@ func setup_pilots(pilot_data: Array):
 	for p_idx in range(pilot_data.size()):
 		var pilot = pilot_data[p_idx]
 		var path_follow = PathFollow2D.new()
-		path_follow.rotates = false  # Keep icons upright
+		path_follow.rotates = true  # Rotate to face heading direction
 		path_follow.loop = true
 
 		# Create visual marker (pod racer sprite)

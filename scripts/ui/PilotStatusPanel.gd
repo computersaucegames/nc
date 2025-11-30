@@ -6,6 +6,26 @@ class_name PilotStatusPanel
 var pilot_labels: Dictionary = {}
 var circuit: Circuit  # Reference to track sector names
 
+# Pod racer sprites for pilot icons (matching CircuitDisplay)
+const POD_SPRITES = [
+	"res://resources/art/classic-Recovered.png",
+	"res://resources/art/bigblue-Recovered.png",
+	"res://resources/art/3 wide-Recovered.png",
+	"res://resources/art/pod-Recovered.png",
+]
+
+# Colors to modulate pods (matching CircuitDisplay)
+const PILOT_COLORS = [
+	Color.WHITE,          # 1st - classic (red)
+	Color.WHITE,          # 2nd - bigblue (blue)
+	Color.WHITE,          # 3rd - 3 wide (red/orange)
+	Color.CORAL,          # 4th - pod (yellow) with coral tint
+	Color.HOT_PINK,       # 5th - classic + pink tint
+	Color.LAWN_GREEN,     # 6th - bigblue + green tint
+	Color.PURPLE,         # 7th - 3 wide + purple tint
+	Color.CYAN            # 8th - pod + cyan tint
+]
+
 func _ready():
 	setup_ui()
 
@@ -22,18 +42,38 @@ func setup_ui():
 func setup_pilots(pilot_data: Array):
 	# Clear existing labels
 	for child in get_children():
-		if child is RichTextLabel:
+		if child is HBoxContainer:
 			child.queue_free()
 	pilot_labels.clear()
-	
-	# Create pilot status labels
-	for data in pilot_data:
+
+	# Create pilot status labels with sprites
+	for p_idx in range(pilot_data.size()):
+		var data = pilot_data[p_idx]
+
+		# Create horizontal container for sprite + text
+		var hbox = HBoxContainer.new()
+		hbox.custom_minimum_size.y = 60
+
+		# Add sprite
+		var sprite = TextureRect.new()
+		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		sprite.custom_minimum_size = Vector2(32, 32)
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var pod_index = p_idx % POD_SPRITES.size()
+		sprite.texture = load(POD_SPRITES[pod_index])
+		sprite.modulate = PILOT_COLORS[p_idx % PILOT_COLORS.size()]
+		hbox.add_child(sprite)
+
+		# Add label
 		var label = RichTextLabel.new()
 		label.bbcode_enabled = true
 		label.custom_minimum_size.y = 60
 		label.fit_content = true
-		add_child(label)
-		pilot_labels[data.name] = label
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hbox.add_child(label)
+
+		add_child(hbox)
+		pilot_labels[data.name] = {"container": hbox, "label": label, "sprite": sprite}
 
 # Set the circuit reference for sector names
 func set_circuit(race_circuit: Circuit):
@@ -49,14 +89,14 @@ func update_all_pilots(pilots: Array):
 	for i in range(sorted_pilots.size()):
 		var pilot = sorted_pilots[i]
 		if pilot.name in pilot_labels:
-			var label = pilot_labels[pilot.name]
-			var current_index = label.get_index()
+			var container = pilot_labels[pilot.name]["container"]
+			var current_index = container.get_index()
 			var target_index = i + 1  # +1 to account for title label
 
 			# If position changed, animate the movement
 			if current_index != target_index:
-				animate_position_change(label)
-				move_child(label, target_index)
+				animate_position_change(container)
+				move_child(container, target_index)
 
 	# Update display content for all pilots
 	for pilot in sorted_pilots:
@@ -66,8 +106,8 @@ func update_all_pilots(pilots: Array):
 func update_pilot_display(pilot):
 	if not pilot.name in pilot_labels:
 		return
-	
-	var label = pilot_labels[pilot.name]
+
+	var label = pilot_labels[pilot.name]["label"]
 	var color = get_position_color(pilot.position)
 	
 	var sector_name = ""
@@ -106,16 +146,16 @@ func get_position_color(position: int) -> String:
 	return "white"
 
 # Animate a pilot label when its position changes
-func animate_position_change(label: RichTextLabel):
+func animate_position_change(container: HBoxContainer):
 	# Create a brief highlight animation to show movement
 	var tween = create_tween()
 	tween.set_parallel(true)
 
 	# Flash effect with a bright highlight
-	label.modulate = Color(1.5, 1.5, 1.0)  # Bright yellow
-	tween.tween_property(label, "modulate", Color.WHITE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	container.modulate = Color(1.5, 1.5, 1.0)  # Bright yellow
+	tween.tween_property(container, "modulate", Color.WHITE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
 	# Scale pulse effect
-	var original_scale = label.scale
-	label.scale = Vector2(1.05, 1.05)
-	tween.tween_property(label, "scale", original_scale, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
+	var original_scale = container.scale
+	container.scale = Vector2(1.05, 1.05)
+	tween.tween_property(container, "scale", original_scale, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
