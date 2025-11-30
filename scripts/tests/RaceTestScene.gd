@@ -184,8 +184,8 @@ func _on_overtake_blocked(attacker, defender):
 func _on_capacity_blocked(pilot, blocking_pilots: Array, intended_movement: int, actual_movement: int):
 	race_log.log_capacity_blocked(pilot.name, blocking_pilots, intended_movement, actual_movement)
 
-func _on_sector_completed(pilot, sector):
-	race_log.log_sector_completed(pilot.name, sector.sector_name)
+func _on_sector_completed(pilot, sector, momentum: int):
+	race_log.log_sector_completed(pilot.name, sector.sector_name, momentum)
 
 func _on_lap_completed(pilot, lap_num: int):
 	race_log.log_lap_completed(pilot.name, lap_num)
