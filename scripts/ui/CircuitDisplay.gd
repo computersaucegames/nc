@@ -254,22 +254,31 @@ func _apply_overlap_offsets():
 	for pilot_id in pilot_markers.keys():
 		var icon = pilot_markers[pilot_id].get_child(0)
 		if icon:
-			icon.position.x = 0
+			icon.position = Vector2.ZERO
 
 	# Apply offsets to overlapping groups
 	for group in groups:
 		var num_pilots = group.size()
 		for group_idx in range(num_pilots):
-			var offset = _calculate_lateral_offset(group_idx, num_pilots)
-			var icon = group[group_idx].marker.get_child(0)
+			var offset_distance = _calculate_lateral_offset(group_idx, num_pilots)
+			var path_follow: PathFollow2D = group[group_idx].marker
+			var icon = path_follow.get_child(0)
 			if icon:
-				icon.position.x = offset
+				# Calculate perpendicular direction to the track
+				# PathFollow2D.rotation gives us the tangent angle
+				# Add 90 degrees (PI/2) to get the perpendicular
+				var perpendicular_angle = path_follow.rotation + PI / 2
+				var perpendicular_dir = Vector2(cos(perpendicular_angle), sin(perpendicular_angle))
 
-## Calculate lateral offset for pilot in overlapping group
+				# Apply offset along the perpendicular direction
+				icon.position = perpendicular_dir * offset_distance
+
+## Calculate lateral offset distance for pilot in overlapping group
+## Returns a signed distance value applied perpendicular to the track
 func _calculate_lateral_offset(index: int, total: int) -> float:
 	# Center the group around 0
-	# For 2 pilots: -10, +10
-	# For 3 pilots: -20, 0, +20
-	# For 4 pilots: -30, -10, +10, +30
+	# For 2 pilots: -25, +25 (pixels perpendicular to track)
+	# For 3 pilots: -50, 0, +50
+	# For 4 pilots: -75, -25, +25, +75
 	var half_width = (total - 1) * LATERAL_OFFSET_DISTANCE / 2.0
 	return (index * LATERAL_OFFSET_DISTANCE) - half_width
