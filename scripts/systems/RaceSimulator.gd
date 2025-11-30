@@ -19,7 +19,7 @@ signal overtake_attempt(attacker: PilotState, defender: PilotState, attacker_rol
 signal overtake_completed(overtaking_pilot: PilotState, overtaken_pilot: PilotState)
 signal overtake_blocked(attacker: PilotState, defender: PilotState)
 signal capacity_blocked(pilot: PilotState, blocking_pilots: Array, intended_movement: int, actual_movement: int)
-signal sector_completed(pilot: PilotState, sector: Sector)
+signal sector_completed(pilot: PilotState, sector: Sector, momentum: int)
 signal lap_completed(pilot: PilotState, lap_number: int)
 signal pilot_finished(pilot: PilotState, finish_position: int)
 signal wheel_to_wheel_detected(pilot1: PilotState, pilot2: PilotState)
@@ -330,8 +330,10 @@ func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -
 # Handle the results of movement (sectors, laps, finishing)
 func handle_movement_results(pilot: PilotState, move_result):
 	# Emit events for completed sectors
-	for completed_sector in move_result.sectors_completed:
-		sector_completed.emit(pilot, completed_sector)
+	for i in range(move_result.sectors_completed.size()):
+		var completed_sector = move_result.sectors_completed[i]
+		var momentum = move_result.momentum_gained[i] if i < move_result.momentum_gained.size() else 0
+		sector_completed.emit(pilot, completed_sector, momentum)
 	
 	# Handle lap completion
 	if move_result.lap_completed:

@@ -113,9 +113,10 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 	tier_result.add_theme_font_size_override("font_size", 18)
 	tier_result.add_theme_color_override("font_color", tier_color)
 
-	# Movement outcome
+	# Movement outcome (with potential momentum info)
 	movement_result.visible = true
-	movement_result.text = "Movement: %d gaps" % movement
+	var momentum_text = _calculate_potential_momentum_text(pilot, sector, movement)
+	movement_result.text = "Movement: %d gaps%s" % [movement, momentum_text]
 	movement_result.add_theme_font_size_override("font_size", 16)
 	movement_result.add_theme_color_override("font_color", Color.LAWN_GREEN)
 
@@ -125,6 +126,16 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 	resolution_label.text = resolution_text
 	resolution_label.add_theme_font_size_override("font_size", 14)
 	resolution_label.add_theme_color_override("font_color", TIER_COLORS.get(roll_result.tier_name, Color.WHITE))
+
+func _calculate_potential_momentum_text(pilot: PilotState, sector, movement: int) -> String:
+	# Calculate if this movement would complete the sector
+	var new_gap = pilot.gap_in_sector + movement
+	if new_gap >= sector.length_in_gap:
+		var excess = new_gap - sector.length_in_gap
+		var potential_momentum = min(excess, sector.carrythru)
+		if potential_momentum > 0:
+			return " (+%d momentum)" % potential_momentum
+	return ""
 
 func _get_resolution_text(pilot_name: String, tier: String, movement: int) -> String:
 	match tier:

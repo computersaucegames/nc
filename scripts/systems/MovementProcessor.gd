@@ -9,6 +9,7 @@ class_name MovementProcessor
 class MovementResult:
 	var final_movement: int = 0
 	var sectors_completed: Array = []  # List of completed sectors
+	var momentum_gained: Array = []  # Momentum (carrythru) for each completed sector
 	var lap_completed: bool = false
 	var new_lap_number: int = 0
 	var race_finished: bool = false
@@ -35,28 +36,29 @@ static func apply_movement(
 	while new_gap >= current_sector.length_in_gap:
 		# Complete this sector
 		result.sectors_completed.append(current_sector)
-		
+
 		# Calculate excess and apply carrythru
 		var excess = new_gap - current_sector.length_in_gap
-		excess = min(excess, current_sector.carrythru)
-		
+		var actual_momentum = min(excess, current_sector.carrythru)
+		result.momentum_gained.append(actual_momentum)  # Track momentum
+
 		# Move to next sector
 		pilot.current_sector += 1
-		
+
 		# Check for lap completion
 		if pilot.current_sector >= circuit.sectors.size():
 			pilot.current_sector = 0
 			pilot.current_lap += 1
 			result.lap_completed = true
 			result.new_lap_number = pilot.current_lap
-			
+
 			# Check if race is finished for this pilot
 			if pilot.current_lap > circuit.total_laps:
 				result.race_finished = true
 				break
-		
-		# Set position in new sector
-		new_gap = excess
+
+		# Set position in new sector (using actual momentum, not raw excess)
+		new_gap = actual_momentum
 		
 		# Get the new current sector for next iteration
 		if pilot.current_sector < circuit.sectors.size():

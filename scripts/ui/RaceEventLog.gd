@@ -110,8 +110,11 @@ func log_capacity_blocked(pilot_name: String, blocking_pilots: Array, intended_m
 		pilot_name, blockers_text, intended_movement, actual_movement
 	])
 
-func log_sector_completed(pilot_name: String, sector_name: String):
-	output_log.append_text("  ✓ %s completes %s\n" % [pilot_name, sector_name])
+func log_sector_completed(pilot_name: String, sector_name: String, momentum: int = 0):
+	var momentum_text = ""
+	if momentum > 0:
+		momentum_text = " (+%d momentum)" % momentum
+	output_log.append_text("  ✓ %s completes %s%s\n" % [pilot_name, sector_name, momentum_text])
 
 func log_lap_completed(pilot_name: String, lap_num: int):
 	output_log.append_text("[b][color=cyan]🏁 %s completes Lap %d![/color][/b]\n" % [
