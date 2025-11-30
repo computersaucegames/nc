@@ -112,7 +112,7 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 		panel.position = screen_pos + offset
 
 		# Setup panel data
-		if current_stage == DisplayStage.SHOWING_ROLLS and event.roll_results.size() > pilot_idx:
+		if event.roll_results.size() > pilot_idx:
 			# Show roll results
 			var roll_result = event.roll_results[pilot_idx]
 			var movement = event.movement_outcomes[pilot_idx]
