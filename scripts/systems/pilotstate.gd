@@ -22,11 +22,16 @@ var is_attacking: bool = false
 var is_defending: bool = false
 var is_wheel_to_wheel: bool = false
 var is_in_train: bool = false
+var is_dueling: bool = false  # In a multi-round duel (2+ consecutive W2W rounds)
 
 # Track who we're interacting with
 var attacking_targets: Array = []  # Fins we're attacking
 var defending_from: Array = []     # Fins attacking us
 var wheel_to_wheel_with: Array = [] # Fins we're W2W with
+
+# Duel tracking
+var consecutive_w2w_rounds: int = 0  # How many rounds we've been W2W with same opponent
+var last_w2w_partner_name: String = ""  # Who we were W2W with last round
 
 # Race start effects
 var has_poor_start: bool = false  # Will have disadvantage on first roll
@@ -57,7 +62,9 @@ func get_status_string() -> String:
 	var statuses = []
 	if is_clear_air:
 		statuses.append("Clear Air")
-	if is_wheel_to_wheel:
+	if is_dueling:
+		statuses.append("DUEL")
+	elif is_wheel_to_wheel:
 		statuses.append("Wheel-to-Wheel")
 	if is_attacking:
 		statuses.append("Attacking")
@@ -65,7 +72,7 @@ func get_status_string() -> String:
 		statuses.append("Defending")
 	if is_in_train:
 		statuses.append("TRAIN")
-	
+
 	if statuses.is_empty():
 		return "Unknown"
 	return " + ".join(statuses)
@@ -94,6 +101,7 @@ func clear_statuses() -> void:
 	is_defending = false
 	is_wheel_to_wheel = false
 	is_in_train = false
+	is_dueling = false
 	attacking_targets.clear()
 	defending_from.clear()
 	wheel_to_wheel_with.clear()

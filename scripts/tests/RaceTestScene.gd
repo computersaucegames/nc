@@ -45,6 +45,7 @@ func setup_race_simulator():
 	race_sim.lap_completed.connect(_on_lap_completed)
 	race_sim.pilot_finished.connect(_on_pilot_finished)
 	race_sim.wheel_to_wheel_detected.connect(_on_wheel_to_wheel)
+	race_sim.duel_started.connect(_on_duel_started)
 	race_sim.focus_mode_triggered.connect(_on_focus_mode)
 	race_sim.race_finished.connect(_on_race_finished)
 
@@ -115,7 +116,52 @@ func _on_round_started(round_num: int):
 	update_pilot_displays()
 
 func _on_pilot_rolling(pilot, sector):
-	race_log.log_pilot_rolling(pilot.name, sector.sector_name)
+	# Calculate total gaps in circuit
+	var total_gaps = 0
+	for s in test_circuit.sectors:
+		total_gaps += s.length_in_gap
+
+	# Get status string
+	var status = ""
+	if pilot.is_dueling:
+		status = "DUEL"
+	elif pilot.is_wheel_to_wheel:
+		status = "W2W"
+	elif pilot.is_clear_air:
+		status = "Clear Air"
+	elif pilot.is_in_train:
+		status = "In Train"
+	elif pilot.is_attacking and pilot.is_defending:
+		status = "Attacking & Defending"
+	elif pilot.is_attacking:
+		status = "Attacking"
+	elif pilot.is_defending:
+		status = "Defending"
+
+	# Sector progress
+	var sector_progress = "Sector %d: %d/%d" % [pilot.current_sector + 1, pilot.gap_in_sector, sector.length_in_gap]
+
+	# Gap to position ahead
+	var gap_ahead = ""
+	var pilot_ahead = null
+	var smallest_gap = 999999
+	for other in race_sim.pilots:
+		if other == pilot or other.finished:
+			continue
+		var gap_diff = other.total_distance - pilot.total_distance
+		if gap_diff > 0 and gap_diff < smallest_gap:
+			smallest_gap = gap_diff
+			pilot_ahead = other
+
+	if pilot_ahead != null:
+		if smallest_gap == 0:
+			gap_ahead = "W2W with %s" % pilot_ahead.name
+		else:
+			gap_ahead = "+%d gap" % smallest_gap
+	else:
+		gap_ahead = "Leading"
+
+	race_log.log_pilot_rolling(pilot.name, sector.sector_name, pilot.total_distance, total_gaps, status, sector_progress, gap_ahead)
 
 func _on_pilot_rolled(pilot, result: Dice.DiceResult):
 	race_log.log_pilot_rolled(pilot.name, result)
@@ -149,6 +195,9 @@ func _on_pilot_finished(pilot, finish_position: int):
 
 func _on_wheel_to_wheel(pilot1, pilot2):
 	race_log.log_wheel_to_wheel(pilot1.name, pilot2.name)
+
+func _on_duel_started(pilot1, pilot2, round_number: int):
+	race_log.log_duel_started(pilot1.name, pilot2.name, round_number)
 
 func _on_focus_mode(pilots: Array, reason: String):
 	race_log.log_focus_mode(reason)
