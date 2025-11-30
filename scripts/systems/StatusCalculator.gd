@@ -12,17 +12,20 @@ const DEFEND_RANGE = 3  # Gap range for defending
 static func calculate_all_statuses(pilots: Array) -> void:
 	# First, clear all statuses
 	_clear_all_statuses(pilots)
-	
+
 	# Calculate basic statuses for each pilot
 	for i in range(pilots.size()):
 		var pilot = pilots[i]
 		if pilot.finished:
 			continue
-			
+
 		_calculate_pilot_status(pilot, pilots)
-	
+
 	# Check for trains
 	_detect_trains(pilots)
+
+	# Check for duels (multi-round W2W)
+	_detect_duels(pilots)
 
 # Clear all status flags for pilots
 static func _clear_all_statuses(pilots: Array) -> void:
@@ -90,6 +93,34 @@ static func _get_connected_group(pilot) -> Array:
 	group.append_array(pilot.attacking_targets)
 	group.append_array(pilot.defending_from)
 	return group
+
+# Detect duels (pilots who have been W2W for 2+ consecutive rounds)
+static func _detect_duels(pilots: Array) -> void:
+	for pilot in pilots:
+		if pilot.finished:
+			continue
+
+		# Check if pilot is currently W2W
+		if pilot.is_wheel_to_wheel and pilot.wheel_to_wheel_with.size() == 1:
+			# Get the current W2W partner
+			var current_partner = pilot.wheel_to_wheel_with[0]
+
+			# Check if this is the same partner as last round
+			if current_partner.name == pilot.last_w2w_partner_name:
+				# Same partner - increment consecutive rounds
+				pilot.consecutive_w2w_rounds += 1
+
+				# If 2+ rounds, mark as dueling
+				if pilot.consecutive_w2w_rounds >= 2:
+					pilot.is_dueling = true
+			else:
+				# Different partner - reset and start counting
+				pilot.consecutive_w2w_rounds = 1
+				pilot.last_w2w_partner_name = current_partner.name
+		else:
+			# Not W2W or multiple W2W partners - reset duel tracking
+			pilot.consecutive_w2w_rounds = 0
+			pilot.last_w2w_partner_name = ""
 
 # Calculate gap between two pilots
 static func calculate_gap_between(pilot1, pilot2) -> int:

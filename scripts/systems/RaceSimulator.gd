@@ -23,6 +23,7 @@ signal sector_completed(pilot: PilotState, sector: Sector)
 signal lap_completed(pilot: PilotState, lap_number: int)
 signal pilot_finished(pilot: PilotState, finish_position: int)
 signal wheel_to_wheel_detected(pilot1: PilotState, pilot2: PilotState)
+signal duel_started(pilot1: PilotState, pilot2: PilotState, round_number: int)
 signal focus_mode_triggered(pilots: Array, reason: String)
 signal race_finished(final_positions: Array)
 
@@ -141,6 +142,18 @@ func process_round():
 	current_round_w2w_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
 	for pair in current_round_w2w_pairs:
 		wheel_to_wheel_detected.emit(pair[0], pair[1])
+
+	# Check for duels (2+ consecutive rounds of W2W)
+	for pilot in pilots:
+		if pilot.is_dueling and pilot.consecutive_w2w_rounds == 2:
+			# This is the first round of the duel - emit signal
+			var partner = pilot.wheel_to_wheel_with[0] if pilot.wheel_to_wheel_with.size() > 0 else null
+			if partner != null:
+				# Only emit once per duel (check if we haven't already emitted for this pair)
+				var pair_key = _get_pair_key(pilot, partner)
+				if pair_key not in processed_w2w_pairs:  # Reuse this tracking to avoid duplicate duel signals
+					duel_started.emit(pilot, partner, current_round)
+					processed_w2w_pairs.append(pair_key)  # Mark as emitted
 
 	# Process pilots starting from index 0
 	_process_pilots_from_index(0)

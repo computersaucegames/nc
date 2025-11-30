@@ -56,8 +56,24 @@ func log_start_rolls(start_results: Array):
 func log_round_started(round_num: int):
 	output_log.append_text("\n[b]Round %d[/b]\n" % round_num)
 
-func log_pilot_rolling(pilot_name: String, sector_name: String):
-	output_log.append_text("  %s approaching %s...\n" % [pilot_name, sector_name])
+func log_pilot_rolling(pilot_name: String, sector_name: String, total_gap: int = -1, max_gap: int = -1, status: String = "", sector_progress: String = "", gap_ahead: String = ""):
+	var info_parts = []
+
+	# Build info string with provided details
+	if total_gap >= 0 and max_gap > 0:
+		info_parts.append("Gap %d/%d" % [total_gap, max_gap])
+	if status != "":
+		info_parts.append(status)
+	if sector_progress != "":
+		info_parts.append(sector_progress)
+	if gap_ahead != "":
+		info_parts.append(gap_ahead)
+
+	var info_string = ""
+	if info_parts.size() > 0:
+		info_string = " [" + ", ".join(info_parts) + "]"
+
+	output_log.append_text("  %s%s approaching %s...\n" % [pilot_name, info_string, sector_name])
 
 func log_pilot_rolled(pilot_name: String, result: Dice.DiceResult):
 	var color = get_tier_color_name(result.tier)
@@ -112,6 +128,11 @@ func log_pilot_finished(pilot_name: String, finish_position: int):
 func log_wheel_to_wheel(pilot1_name: String, pilot2_name: String):
 	output_log.append_text("[b][color=orange]⚠️ WHEEL-TO-WHEEL! %s vs %s![/color][/b]\n" % [
 		pilot1_name, pilot2_name
+	])
+
+func log_duel_started(pilot1_name: String, pilot2_name: String, round_number: int):
+	output_log.append_text("[b][color=red]⚔️ DUEL! %s vs %s - Round %d of their battle![/color][/b]\n" % [
+		pilot1_name, pilot2_name, round_number
 	])
 
 func log_focus_mode(reason: String):
