@@ -15,6 +15,7 @@ enum CheckType {
 @export var carrythru: int = 2  # Max excess Gap that can transfer to next sector
 @export var check_type: CheckType = CheckType.EDGE
 @export var is_start_sector: bool = false  # Is this where the race starts?
+@export var max_side_by_side: int = 2  # Maximum number of fins that can race wheel-to-wheel
 
 # Gate thresholds - the roll must meet or exceed these values
 @export_group("Gate Thresholds")
