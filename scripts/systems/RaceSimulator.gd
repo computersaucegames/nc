@@ -343,6 +343,9 @@ func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: Focus
 		FocusMode.deactivate()
 		race_mode = RaceMode.RUNNING
 
+		# Resume auto-advance by starting next round
+		auto_advance_timer.start(auto_advance_delay)
+
 # Execute rolls for both W2W pilots
 func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
 	var sector = event.sector

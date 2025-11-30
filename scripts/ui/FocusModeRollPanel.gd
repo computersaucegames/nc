@@ -11,9 +11,11 @@ class_name FocusModeRollPanel
 @onready var d20_result: Label = $VBox/RollContainer/D20Result
 @onready var stat_bonus: Label = $VBox/RollContainer/StatBonus
 @onready var modifiers_container: VBoxContainer = $VBox/RollContainer/ModifiersContainer
+@onready var calculation_label: Label = $VBox/RollContainer/CalculationLabel
 @onready var total_result: Label = $VBox/RollContainer/TotalResult
 @onready var tier_result: Label = $VBox/RollContainer/TierResult
 @onready var movement_result: Label = $VBox/MovementResult
+@onready var resolution_label: Label = $VBox/ResolutionLabel
 
 # Theme colors for tiers
 const TIER_COLORS = {
@@ -50,6 +52,7 @@ func setup_pre_roll_display(pilot: PilotState, sector):
 	# Hide roll results until rolled
 	roll_container.visible = false
 	movement_result.visible = false
+	resolution_label.visible = false
 
 ## Setup display with roll results
 func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int):
@@ -89,6 +92,14 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 		no_mods.add_theme_font_size_override("font_size", 12)
 		modifiers_container.add_child(no_mods)
 
+	# Calculation breakdown
+	var calc_parts = [str(roll_result.base_roll), str(roll_result.stat_value)]
+	if roll_result.flat_modifiers != 0:
+		calc_parts.append(str(roll_result.flat_modifiers))
+	calculation_label.text = " + ".join(calc_parts) + " = " + str(roll_result.final_total)
+	calculation_label.add_theme_font_size_override("font_size", 14)
+	calculation_label.add_theme_color_override("font_color", Color.AQUA)
+
 	# Total result
 	total_result.text = "Total: %d" % roll_result.final_total
 	total_result.add_theme_font_size_override("font_size", 16)
@@ -105,3 +116,23 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 	movement_result.text = "Movement: %d gaps" % movement
 	movement_result.add_theme_font_size_override("font_size", 16)
 	movement_result.add_theme_color_override("font_color", Color.LAWN_GREEN)
+
+	# Resolution text
+	resolution_label.visible = true
+	var resolution_text = _get_resolution_text(pilot.name, roll_result.tier_name, movement)
+	resolution_label.text = resolution_text
+	resolution_label.add_theme_font_size_override("font_size", 14)
+	resolution_label.add_theme_color_override("font_color", TIER_COLORS.get(roll_result.tier_name, Color.WHITE))
+
+func _get_resolution_text(pilot_name: String, tier: String, movement: int) -> String:
+	match tier:
+		"PURPLE":
+			return "%s surges ahead!" % pilot_name
+		"GREEN":
+			return "%s pushes forward!" % pilot_name
+		"GREY":
+			return "%s maintains pace" % pilot_name
+		"RED":
+			return "%s struggles!" % pilot_name
+		_:
+			return "%s advances" % pilot_name
