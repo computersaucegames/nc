@@ -73,9 +73,9 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 	# Show pilot current stats with tied position if in W2W mode
 	var stat_value = pilot.get_stat(sector.check_type)
 	if tied_position > 0:
-		pilot_info_label.text = "Tied for P%d | %s: +%d" % [tied_position, sector.get_check_type_string().capitalize(), stat_value]
+		pilot_info_label.text = _format_pilot_info("Tied for P%d" % tied_position, "%s: +%d" % [sector.get_check_type_string().capitalize(), stat_value])
 	else:
-		pilot_info_label.text = "Position: %d | %s: +%d" % [pilot.position, sector.get_check_type_string().capitalize(), stat_value]
+		pilot_info_label.text = _format_pilot_info("Position: %d" % pilot.position, "%s: +%d" % [sector.get_check_type_string().capitalize(), stat_value])
 
 	# Hide roll results until rolled
 	roll_container.visible = false
@@ -103,9 +103,9 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 
 	# Show pilot info with tied position if in W2W mode
 	if tied_position > 0:
-		pilot_info_label.text = "Tied for P%d | Status: %s" % [tied_position, pilot.get_status_string()]
+		pilot_info_label.text = _format_pilot_info("Tied for P%d" % tied_position, "Status: %s" % pilot.get_status_string())
 	else:
-		pilot_info_label.text = "Position: %d | Status: %s" % [pilot.position, pilot.get_status_string()]
+		pilot_info_label.text = _format_pilot_info("Position: %d" % pilot.position, "Status: %s" % pilot.get_status_string())
 
 	# Show roll breakdown
 	roll_container.visible = true
@@ -169,6 +169,17 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 	resolution_label.text = resolution_text
 	resolution_label.add_theme_font_size_override("font_size", 14)
 	resolution_label.add_theme_color_override("font_color", TIER_COLORS.get(roll_result.tier_name, Color.WHITE))
+
+## Format pilot info text with line break if too long
+func _format_pilot_info(part1: String, part2: String) -> String:
+	const MAX_LENGTH = 30  # Character threshold before breaking to new line
+	var combined = part1 + " | " + part2
+
+	# If combined text is too long, use a line break instead of pipe separator
+	if combined.length() > MAX_LENGTH:
+		return part1 + "\n" + part2
+	else:
+		return combined
 
 func _calculate_potential_momentum_text(pilot: PilotState, sector, movement: int) -> String:
 	# Calculate if this movement would complete the sector
