@@ -7,7 +7,7 @@
 script = ExtResource("2_pizza")
 sector_name = "Crust Corner"
 length_in_gap = 6
-carrythru = 2
+carrythru = 0
 check_type = 0
 is_start_sector = true
 grey_threshold = 5
@@ -41,7 +41,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 script = ExtResource("2_pizza")
 sector_name = "Sauce Straight"
 length_in_gap = 6
-carrythru = 2
+carrythru = 4
 check_type = 3
 is_start_sector = false
 grey_threshold = 5
