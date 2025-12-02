@@ -4,17 +4,29 @@ extends VBoxContainer
 class_name RaceEventLog
 
 @onready var output_log: RichTextLabel
+var export_button: Button
 
 func _ready():
 	setup_ui()
 
 func setup_ui():
+	# Header with title and export button
+	var header = HBoxContainer.new()
+	add_child(header)
+
 	# Title
 	var log_title = Label.new()
 	log_title.text = "RACE LOG"
 	log_title.add_theme_font_size_override("font_size", 18)
-	add_child(log_title)
-	
+	log_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(log_title)
+
+	# Export button
+	export_button = Button.new()
+	export_button.text = "Copy Log"
+	export_button.pressed.connect(_on_export_pressed)
+	header.add_child(export_button)
+
 	# Rich text log
 	output_log = RichTextLabel.new()
 	output_log.bbcode_enabled = true
@@ -171,3 +183,27 @@ func get_start_roll_effect(tier: Dice.Tier) -> String:
 		Dice.Tier.RED:
 			return " - POOR START! (Disadvantage next roll)"
 	return ""
+
+# === Export methods ===
+
+func _on_export_pressed():
+	var plain_text = get_plain_text()
+	DisplayServer.clipboard_set(plain_text)
+	export_button.text = "Copied!"
+	await get_tree().create_timer(1.5).timeout
+	export_button.text = "Copy Log"
+
+func get_plain_text() -> String:
+	# Get text and strip BBCode tags
+	var text = output_log.get_parsed_text()
+	return text
+
+func export_to_file(filepath: String) -> bool:
+	var file = FileAccess.open(filepath, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to open file for writing: " + filepath)
+		return false
+
+	file.store_string(get_plain_text())
+	file.close()
+	return true
