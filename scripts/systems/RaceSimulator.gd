@@ -128,12 +128,17 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 		pilot_rolled.emit(pilot, roll)
 		event.roll_results.append(roll)
 
+		# Calculate movement for this roll
+		var movement = start_sector.get_movement_for_roll(roll.tier)
+		event.movement_outcomes.append(movement)
+
 	# Sort pilots by twitch roll (highest first), ties broken by grid_position (lowest first)
 	var sorted_pilots_with_rolls = []
 	for i in range(pilots.size()):
 		sorted_pilots_with_rolls.append({
 			"pilot": pilots[i],
-			"roll": event.roll_results[i]
+			"roll": event.roll_results[i],
+			"movement": event.movement_outcomes[i]
 		})
 
 	sorted_pilots_with_rolls.sort_custom(func(a, b):
@@ -157,10 +162,7 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 	# Process each pilot in twitch order
 	for entry in sorted_pilots_with_rolls:
 		var pilot = entry.pilot
-		var roll = entry.roll
-
-		# Calculate base movement from the twitch roll
-		var movement = event.sector.get_movement_for_roll(roll.tier)
+		var movement = entry.movement
 
 		# Apply movement (no overtaking at race start, pilots are at different gaps)
 		var move_result = MoveProc.apply_movement(pilot, movement, current_circuit)
