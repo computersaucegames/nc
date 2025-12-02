@@ -152,7 +152,7 @@ func process_round():
 				# Only emit once per duel (check if we haven't already emitted for this pair)
 				var pair_key = _get_pair_key(pilot, partner)
 				if pair_key not in processed_w2w_pairs:  # Reuse this tracking to avoid duplicate duel signals
-					duel_started.emit(pilot, partner, current_round)
+					duel_started.emit(pilot, partner, pilot.consecutive_w2w_rounds)
 					processed_w2w_pairs.append(pair_key)  # Mark as emitted
 
 	# Process pilots starting from index 0
