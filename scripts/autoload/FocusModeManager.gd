@@ -92,3 +92,11 @@ func create_overtake_event(attacker, defender, sector) -> FocusModeEvent:
 	event.sector = sector
 	event.metadata["position_context"] = "Overtake attempt"
 	return event
+
+# Helper to create race start event
+func create_race_start_event(pilots: Array, sector) -> FocusModeEvent:
+	var event = FocusModeEvent.new(EventType.RACE_START)
+	event.pilots = pilots.duplicate()  # All pilots
+	event.sector = sector
+	event.metadata["position_context"] = "Race Start"
+	return event

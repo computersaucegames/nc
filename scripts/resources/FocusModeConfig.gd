@@ -6,7 +6,7 @@ class_name FocusModeConfig
 # Trigger toggles
 @export var enable_wheel_to_wheel: bool = true
 @export var enable_overtakes: bool = false
-@export var enable_race_start: bool = false
+@export var enable_race_start: bool = true
 @export var enable_final_lap: bool = false
 @export var enable_photo_finish: bool = false
 
