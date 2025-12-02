@@ -122,6 +122,17 @@ func log_capacity_blocked(pilot_name: String, blocking_pilots: Array, intended_m
 		pilot_name, blockers_text, intended_movement, actual_movement
 	])
 
+func log_movement_details(pilot_name: String, start_gap: int, start_distance: int, movement: int, end_gap: int, end_distance: int, sector_completed: bool = false, momentum: int = 0):
+	var details = "  📍 %s: Gap %d→%d (Distance %d→%d, moved %d)" % [
+		pilot_name, start_gap, end_gap, start_distance, end_distance, movement
+	]
+	if sector_completed:
+		details += " [Sector complete"
+		if momentum > 0:
+			details += ", +%d momentum" % momentum
+		details += "]"
+	output_log.append_text(details + "\n")
+
 func log_sector_completed(pilot_name: String, sector_name: String, momentum: int = 0):
 	var momentum_text = ""
 	if momentum > 0:

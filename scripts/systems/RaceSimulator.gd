@@ -171,9 +171,19 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 		var pilot = entry.pilot
 		var movement = entry.movement
 
+		# Capture state before movement
+		var start_gap = pilot.gap_in_sector
+		var start_distance = pilot.total_distance
+
 		# Apply movement (no overtaking at race start, pilots are at different gaps)
 		var move_result = MoveProc.apply_movement(pilot, movement, current_circuit)
 		pilot_moved.emit(pilot, movement)
+
+		# Log detailed movement info
+		var sector_completed = move_result.sectors_completed.size() > 0
+		var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
+		race_log.log_movement_details(pilot.name, start_gap, start_distance, movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
+
 		handle_movement_results(pilot, move_result)
 
 	# Update all positions after race start
@@ -313,9 +323,18 @@ func process_pilot_turn(pilot: PilotState):
 	# Check for capacity blocking
 	final_movement = check_capacity_blocking(pilot, final_movement, sector)
 
+	# Capture state before movement
+	var start_gap = pilot.gap_in_sector
+	var start_distance = pilot.total_distance
+
 	# Apply movement
 	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
 	pilot_moved.emit(pilot, final_movement)
+
+	# Log detailed movement info
+	var sector_completed = move_result.sectors_completed.size() > 0
+	var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
+	race_log.log_movement_details(pilot.name, start_gap, start_distance, final_movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
 
 	# Handle sector/lap completion
 	handle_movement_results(pilot, move_result)
@@ -557,16 +576,38 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 	var final_movement1 = handle_overtaking(pilot1, movement1, sector)
 	# Check for capacity blocking
 	final_movement1 = check_capacity_blocking(pilot1, final_movement1, sector)
+
+	# Capture state before movement
+	var start_gap1 = pilot1.gap_in_sector
+	var start_distance1 = pilot1.total_distance
+
 	var move_result1 = MoveProc.apply_movement(pilot1, final_movement1, current_circuit)
 	pilot_moved.emit(pilot1, final_movement1)
+
+	# Log detailed movement info
+	var sector_completed1 = move_result1.sectors_completed.size() > 0
+	var momentum1 = move_result1.momentum_gained[0] if move_result1.momentum_gained.size() > 0 else 0
+	race_log.log_movement_details(pilot1.name, start_gap1, start_distance1, final_movement1, pilot1.gap_in_sector, pilot1.total_distance, sector_completed1, momentum1)
+
 	handle_movement_results(pilot1, move_result1)
 
 	# Handle overtaking for pilot2
 	var final_movement2 = handle_overtaking(pilot2, movement2, sector)
 	# Check for capacity blocking
 	final_movement2 = check_capacity_blocking(pilot2, final_movement2, sector)
+
+	# Capture state before movement
+	var start_gap2 = pilot2.gap_in_sector
+	var start_distance2 = pilot2.total_distance
+
 	var move_result2 = MoveProc.apply_movement(pilot2, final_movement2, current_circuit)
 	pilot_moved.emit(pilot2, final_movement2)
+
+	# Log detailed movement info
+	var sector_completed2 = move_result2.sectors_completed.size() > 0
+	var momentum2 = move_result2.momentum_gained[0] if move_result2.momentum_gained.size() > 0 else 0
+	race_log.log_movement_details(pilot2.name, start_gap2, start_distance2, final_movement2, pilot2.gap_in_sector, pilot2.total_distance, sector_completed2, momentum2)
+
 	handle_movement_results(pilot2, move_result2)
 
 	# Mark both pilots as processed for this round
