@@ -112,8 +112,14 @@ func create_pilot_box(pilot: PilotState, grid_pos: int) -> PanelContainer:
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.2, 0.2, 0.3, 1.0)
 	style.border_color = Color(0.5, 0.5, 0.6, 1.0)
-	style.border_width_all = 2
-	style.corner_radius_all = 5
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5
+	style.corner_radius_bottom_right = 5
 	panel.add_theme_stylebox_override("panel", style)
 
 	var vbox = VBoxContainer.new()
