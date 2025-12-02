@@ -467,8 +467,11 @@ func get_unprocessed_w2w_partner(pilot: PilotState, w2w_pairs: Array):
 			# Check if this pair was already processed
 			var pair_key = _get_pair_key(pair[0], pair[1])
 			if pair_key not in processed_w2w_pairs:
-				# Return the partner
-				return pair[1] if pair[0] == pilot else pair[0]
+				# Get the partner
+				var partner = pair[1] if pair[0] == pilot else pair[0]
+				# Make sure partner hasn't been processed individually either
+				if partner not in pilots_processed_this_round:
+					return partner
 	return null
 
 # Generate unique key for a pilot pair
