@@ -21,6 +21,9 @@ static func calculate_all_statuses(pilots: Array) -> void:
 
 		_calculate_pilot_status(pilot, pilots)
 
+	# Limit W2W to 2-wide (track width)
+	_limit_w2w_pairs(pilots)
+
 	# Check for trains
 	_detect_trains(pilots)
 
@@ -69,6 +72,44 @@ static func _calculate_pilot_status(pilot, all_pilots: Array) -> void:
 	
 	# Set clear air if no close fins
 	pilot.is_clear_air = not has_close_fin
+
+# Limit W2W pairs to 2-wide (track width limit)
+static func _limit_w2w_pairs(pilots: Array) -> void:
+	# Group pilots by total_distance
+	var distance_groups = {}
+	for pilot in pilots:
+		if pilot.finished or not pilot.is_wheel_to_wheel:
+			continue
+
+		var dist = pilot.total_distance
+		if not distance_groups.has(dist):
+			distance_groups[dist] = []
+		distance_groups[dist].append(pilot)
+
+	# For each group with 3+ pilots, limit to best 2
+	for dist in distance_groups:
+		var group = distance_groups[dist]
+		if group.size() <= 2:
+			continue  # 2 or fewer is fine
+
+		# Sort by position (lower = better)
+		group.sort_custom(func(a, b): return a.position < b.position)
+
+		# Keep only the best 2 as W2W
+		var kept_w2w = group.slice(0, 2)
+		var excess_pilots = group.slice(2)
+
+		# Clear W2W status for excess pilots
+		for pilot in excess_pilots:
+			pilot.is_wheel_to_wheel = false
+			pilot.wheel_to_wheel_with.clear()
+
+		# Update the kept W2W pilots to only reference each other
+		for pilot in kept_w2w:
+			pilot.wheel_to_wheel_with.clear()
+			for other in kept_w2w:
+				if other != pilot:
+					pilot.wheel_to_wheel_with.append(other)
 
 # Detect train formations
 static func _detect_trains(pilots: Array) -> void:
