@@ -68,11 +68,31 @@ static func apply_movement(
 	
 	# Apply final gap position
 	pilot.gap_in_sector = new_gap
-	
-	# Update total distance
-	pilot.total_distance += movement
-	
+
+	# Update total distance based on actual position on track
+	pilot.total_distance = calculate_total_distance(pilot, circuit)
+
 	return result
+
+# Calculate accurate total_distance based on pilot's actual position
+static func calculate_total_distance(pilot: PilotState, circuit: Circuit) -> int:
+	var distance = 0
+
+	# Add length of all completed sectors in current lap
+	for i in range(pilot.current_sector):
+		distance += circuit.sectors[i].length_in_gap
+
+	# Add gap within current sector
+	distance += pilot.gap_in_sector
+
+	# Add full laps completed
+	if pilot.current_lap > 1:
+		var circuit_length = 0
+		for sector in circuit.sectors:
+			circuit_length += sector.length_in_gap
+		distance += (pilot.current_lap - 1) * circuit_length
+
+	return distance
 
 # Process movement with overtake adjustments
 static func apply_movement_with_overtakes(
@@ -110,7 +130,7 @@ static func apply_start_bonus(pilot: PilotState, start_roll: Dice.DiceResult) ->
 		Dice.Tier.PURPLE:
 			# Excellent start - gain 1 Gap
 			pilot.gap_in_sector += 1
-			pilot.total_distance += 1
+			# Note: total_distance will be recalculated when pilot moves
 			effects.bonus_applied = true
 			effects.description = "Perfect launch! (+1 Gap)"
 		Dice.Tier.RED:
