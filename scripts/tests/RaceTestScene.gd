@@ -7,6 +7,9 @@ extends Control
 @onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/RaceEventLog
 @onready var focus_mode_overlay: FocusModeOverlay = $FocusModeOverlay
 
+# Starting grid overlay (created programmatically)
+var starting_grid_overlay: StartingGridOverlay
+
 # Race simulator (created programmatically)
 var race_sim: RaceSimulator
 
@@ -15,6 +18,7 @@ var test_circuit: Circuit
 
 func _ready():
 	setup_ui_connections()
+	setup_starting_grid_overlay()
 	setup_race_simulator()
 	create_test_circuit()
 	setup_test_pilots()
@@ -24,6 +28,13 @@ func setup_ui_connections():
 	race_controls.start_pressed.connect(_on_start_pressed)
 	race_controls.pause_pressed.connect(_on_pause_pressed)
 	race_controls.speed_changed.connect(_on_speed_changed)
+
+func setup_starting_grid_overlay():
+	# Create and add starting grid overlay
+	starting_grid_overlay = StartingGridOverlay.new()
+	starting_grid_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	starting_grid_overlay.begin_race_start_requested.connect(_on_begin_race_start)
+	add_child(starting_grid_overlay)
 
 func setup_race_simulator():
 	race_sim = RaceSimulator.new()
@@ -108,6 +119,12 @@ func update_pilot_displays():
 # Signal handlers - ALL CHANGED to use race_log methods
 func _on_race_started(circuit: Circuit, pilots: Array):
 	update_pilot_displays()
+	# Show the starting grid overlay
+	starting_grid_overlay.show_grid(pilots, circuit)
+
+func _on_begin_race_start():
+	# User clicked "Begin Race Start" - start the focus mode
+	race_sim.begin_race_start_focus_mode()
 
 func _on_race_start_rolls(start_results: Array):
 	race_log.log_start_rolls(start_results)

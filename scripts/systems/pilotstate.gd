@@ -14,6 +14,7 @@ var gap_in_sector: int = 0
 var current_lap: int = 1
 var total_distance: int = 0  # Total Gap traveled (for position)
 var position: int = 1
+var grid_position: int = 1  # Starting position on the grid (used for tiebreakers)
 var finished: bool = false  # Track if pilot has finished the race
 var finish_round: int = 0  # Round number when pilot finished
 

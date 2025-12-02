@@ -56,9 +56,9 @@ func _ready():
 # Start a new race
 func start_race(circuit: Circuit, pilot_list: Array):
 	current_circuit = circuit
-	race_mode = RaceMode.RUNNING
+	race_mode = RaceMode.STOPPED  # Stay stopped until grid is confirmed
 	current_round = 0
-	
+
 	# Initialize pilot states
 	pilots.clear()
 	for i in range(pilot_list.size()):
@@ -66,36 +66,118 @@ func start_race(circuit: Circuit, pilot_list: Array):
 		pilot_state.pilot_id = i  # Set the pilot ID for UI tracking
 		pilot_state.setup_from_dict(pilot_list[i], i + 1)
 		pilots.append(pilot_state)
-	
+
 	# Use StartHandler to setup grid
 	StartHandler.form_starting_grid(pilots, circuit)
-	
-	race_started.emit(current_circuit, pilots)
-	
-	# Execute race start procedure
-	execute_race_start()
 
-# Handle the race start procedure
-func execute_race_start():
-	# Use StartHandler for launch procedure
-	var start_results = StartHandler.execute_launch_procedure(pilots)
-	
-	# Convert to format expected by signal
-	var signal_data = []
-	for result in start_results:
-		signal_data.append({
-			"pilot": result.pilot,
-			"roll": result.roll
+	race_started.emit(current_circuit, pilots)
+
+	# Don't execute race start yet - wait for UI to show grid and user to confirm
+
+# Begin the race start in Focus Mode
+func begin_race_start_focus_mode():
+	# Get the start sector
+	var start_sector_idx = StartHandler.find_start_sector(current_circuit)
+	var start_sector = current_circuit.sectors[start_sector_idx]
+
+	# Create Focus Mode event for race start
+	var event = FocusMode.create_race_start_event(pilots, start_sector)
+
+	# Enter Focus Mode state
+	race_mode = RaceMode.FOCUS_MODE
+
+	# Connect to Focus Mode advance signal
+	current_focus_advance_callback = func():
+		_on_race_start_focus_advance(event)
+	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
+
+	# Activate Focus Mode (UI will display grid)
+	FocusMode.activate(event)
+
+# Handle Focus Mode advancement during race start
+func _on_race_start_focus_advance(event: FocusModeManager.FocusModeEvent):
+	# Check what stage we're in
+	if event.roll_results.size() == 0:
+		# Stage 1: Execute all twitch rolls
+		_execute_race_start_rolls(event)
+	else:
+		# Stage 2: Apply movement in twitch order and start race
+		_apply_race_start_movement(event)
+
+		# Disconnect the advance callback
+		if current_focus_advance_callback.is_valid():
+			FocusMode.focus_mode_advance_requested.disconnect(current_focus_advance_callback)
+
+		FocusMode.deactivate()
+		race_mode = RaceMode.RUNNING
+
+		# Start the first round
+		process_round()
+
+# Execute twitch rolls for all pilots at race start
+func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
+	var start_sector = event.sector
+
+	# Roll twitch for all pilots (regardless of sector type)
+	for pilot in pilots:
+		pilot_rolling.emit(pilot, start_sector)
+		var roll = Dice.roll_d20(pilot.twitch, "twitch", [], {}, {
+			"context": "race_start",
+			"pilot": pilot.name
 		})
-	
-	# Emit the start results
-	race_start_rolls.emit(signal_data)
-	
-	# Update positions after start bonuses
+		pilot_rolled.emit(pilot, roll)
+		event.roll_results.append(roll)
+
+	# Sort pilots by twitch roll (highest first), ties broken by grid_position (lowest first)
+	var sorted_pilots_with_rolls = []
+	for i in range(pilots.size()):
+		sorted_pilots_with_rolls.append({
+			"pilot": pilots[i],
+			"roll": event.roll_results[i]
+		})
+
+	sorted_pilots_with_rolls.sort_custom(func(a, b):
+		# First sort by roll total (descending)
+		if a.roll.final_total != b.roll.final_total:
+			return a.roll.final_total > b.roll.final_total
+		# Tie-breaker: grid position (ascending)
+		return a.pilot.grid_position < b.pilot.grid_position
+	)
+
+	# Store sorted order in metadata for movement phase
+	event.metadata["sorted_pilots"] = sorted_pilots_with_rolls
+
+	# Re-emit event to update UI with roll results
+	FocusMode.focus_mode_activated.emit(event)
+
+# Apply movement for all pilots in twitch order
+func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
+	var sorted_pilots_with_rolls = event.metadata["sorted_pilots"]
+
+	# Process each pilot in twitch order
+	for entry in sorted_pilots_with_rolls:
+		var pilot = entry.pilot
+		var roll = entry.roll
+
+		# Calculate base movement from the twitch roll
+		var movement = event.sector.get_movement_for_roll(roll.tier)
+
+		# Apply movement (no overtaking at race start, pilots are at different gaps)
+		var move_result = MoveProc.apply_movement(pilot, movement, current_circuit)
+		pilot_moved.emit(pilot, movement)
+		handle_movement_results(pilot, move_result)
+
+	# Update all positions after race start
 	MoveProc.update_all_positions(pilots)
-	
-	# Start the first round
-	process_round()
+
+	# Emit race start rolls for any UI that wants to display them
+	var signal_data = []
+	for entry in sorted_pilots_with_rolls:
+		signal_data.append({
+			"pilot": entry.pilot,
+			"roll": entry.roll
+		})
+	race_start_rolls.emit(signal_data)
 
 # Pause the race
 func pause_race():
