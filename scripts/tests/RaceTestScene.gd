@@ -47,6 +47,7 @@ func setup_race_simulator():
 	race_sim.pilot_rolling.connect(_on_pilot_rolling)
 	race_sim.pilot_rolled.connect(_on_pilot_rolled)
 	race_sim.pilot_moved.connect(_on_pilot_moved)
+	race_sim.pilot_movement_details.connect(_on_pilot_movement_details)
 	race_sim.overtake_detected.connect(_on_overtake_detected)
 	race_sim.overtake_attempt.connect(_on_overtake_attempt)
 	race_sim.overtake_completed.connect(_on_overtake_completed)
@@ -190,6 +191,9 @@ func _on_pilot_rolled(pilot, result: Dice.DiceResult):
 
 func _on_pilot_moved(pilot, movement: int):
 	update_pilot_displays()
+
+func _on_pilot_movement_details(pilot_name: String, start_gap: int, start_distance: int, movement: int, end_gap: int, end_distance: int, sector_completed: bool, momentum: int):
+	race_log.log_movement_details(pilot_name, start_gap, start_distance, movement, end_gap, end_distance, sector_completed, momentum)
 
 func _on_overtake_detected(overtaking, overtaken):
 	race_log.log_overtake_detected(overtaking.name, overtaken.name)

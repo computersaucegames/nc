@@ -14,6 +14,7 @@ signal round_started(round_number: int)
 signal pilot_rolling(pilot: PilotState, sector: Sector)
 signal pilot_rolled(pilot: PilotState, result: Dice.DiceResult)
 signal pilot_moved(pilot: PilotState, movement: int)
+signal pilot_movement_details(pilot_name: String, start_gap: int, start_distance: int, movement: int, end_gap: int, end_distance: int, sector_completed: bool, momentum: int)
 signal overtake_detected(overtaking_pilot: PilotState, overtaken_pilot: PilotState)
 signal overtake_attempt(attacker: PilotState, defender: PilotState, attacker_roll: Dice.DiceResult, defender_roll: Dice.DiceResult)
 signal overtake_completed(overtaking_pilot: PilotState, overtaken_pilot: PilotState)
@@ -179,10 +180,10 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 		var move_result = MoveProc.apply_movement(pilot, movement, current_circuit)
 		pilot_moved.emit(pilot, movement)
 
-		# Log detailed movement info
+		# Emit detailed movement info
 		var sector_completed = move_result.sectors_completed.size() > 0
 		var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
-		race_log.log_movement_details(pilot.name, start_gap, start_distance, movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
+		pilot_movement_details.emit(pilot.name, start_gap, start_distance, movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
 
 		handle_movement_results(pilot, move_result)
 
@@ -331,10 +332,10 @@ func process_pilot_turn(pilot: PilotState):
 	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
 	pilot_moved.emit(pilot, final_movement)
 
-	# Log detailed movement info
+	# Emit detailed movement info
 	var sector_completed = move_result.sectors_completed.size() > 0
 	var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
-	race_log.log_movement_details(pilot.name, start_gap, start_distance, final_movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
+	pilot_movement_details.emit(pilot.name, start_gap, start_distance, final_movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
 
 	# Handle sector/lap completion
 	handle_movement_results(pilot, move_result)
@@ -584,10 +585,10 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 	var move_result1 = MoveProc.apply_movement(pilot1, final_movement1, current_circuit)
 	pilot_moved.emit(pilot1, final_movement1)
 
-	# Log detailed movement info
+	# Emit detailed movement info
 	var sector_completed1 = move_result1.sectors_completed.size() > 0
 	var momentum1 = move_result1.momentum_gained[0] if move_result1.momentum_gained.size() > 0 else 0
-	race_log.log_movement_details(pilot1.name, start_gap1, start_distance1, final_movement1, pilot1.gap_in_sector, pilot1.total_distance, sector_completed1, momentum1)
+	pilot_movement_details.emit(pilot1.name, start_gap1, start_distance1, final_movement1, pilot1.gap_in_sector, pilot1.total_distance, sector_completed1, momentum1)
 
 	handle_movement_results(pilot1, move_result1)
 
@@ -603,10 +604,10 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 	var move_result2 = MoveProc.apply_movement(pilot2, final_movement2, current_circuit)
 	pilot_moved.emit(pilot2, final_movement2)
 
-	# Log detailed movement info
+	# Emit detailed movement info
 	var sector_completed2 = move_result2.sectors_completed.size() > 0
 	var momentum2 = move_result2.momentum_gained[0] if move_result2.momentum_gained.size() > 0 else 0
-	race_log.log_movement_details(pilot2.name, start_gap2, start_distance2, final_movement2, pilot2.gap_in_sector, pilot2.total_distance, sector_completed2, momentum2)
+	pilot_movement_details.emit(pilot2.name, start_gap2, start_distance2, final_movement2, pilot2.gap_in_sector, pilot2.total_distance, sector_completed2, momentum2)
 
 	handle_movement_results(pilot2, move_result2)
 
