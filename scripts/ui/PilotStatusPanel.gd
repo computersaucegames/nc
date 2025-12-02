@@ -50,11 +50,11 @@ func setup_pilots(pilot_data: Array):
 	for p_idx in range(pilot_data.size()):
 		var data = pilot_data[p_idx]
 
-		# Create horizontal container for sprite + text
+		# Create horizontal container for sprite + headshot + text
 		var hbox = HBoxContainer.new()
 		hbox.custom_minimum_size.y = 60
 
-		# Add sprite
+		# Add sprite (pod racer)
 		var sprite = TextureRect.new()
 		sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -66,6 +66,17 @@ func setup_pilots(pilot_data: Array):
 		sprite.modulate = PILOT_COLORS[p_idx % PILOT_COLORS.size()]
 		hbox.add_child(sprite)
 
+		# Add headshot
+		var headshot = TextureRect.new()
+		headshot.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		headshot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		headshot.custom_minimum_size = Vector2(50, 50)
+		headshot.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		headshot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		if data.has("headshot") and data.headshot != "":
+			headshot.texture = load(data.headshot)
+		hbox.add_child(headshot)
+
 		# Add label
 		var label = RichTextLabel.new()
 		label.bbcode_enabled = true
@@ -75,7 +86,7 @@ func setup_pilots(pilot_data: Array):
 		hbox.add_child(label)
 
 		add_child(hbox)
-		pilot_labels[data.name] = {"container": hbox, "label": label, "sprite": sprite}
+		pilot_labels[data.name] = {"container": hbox, "label": label, "sprite": sprite, "headshot": headshot}
 
 # Set the circuit reference for sector names
 func set_circuit(race_circuit: Circuit):
@@ -179,8 +190,9 @@ func get_position_color(position: int) -> String:
 
 # Animate a pilot label when its position changes
 func animate_position_change(container: HBoxContainer):
-	# Get the label from the container (not the sprite, to avoid modulate conflicts)
-	var label = container.get_child(1) if container.get_child_count() > 1 else null
+	# Get the label from the container (not the sprite or headshot, to avoid modulate conflicts)
+	# Container structure: [sprite, headshot, label]
+	var label = container.get_child(2) if container.get_child_count() > 2 else null
 	if label == null:
 		return
 
@@ -188,7 +200,7 @@ func animate_position_change(container: HBoxContainer):
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Flash effect with a bright highlight (only on the label, not the sprite)
+	# Flash effect with a bright highlight (only on the label, not the sprite or headshot)
 	label.modulate = Color(1.5, 1.5, 1.0)  # Bright yellow
 	tween.tween_property(label, "modulate", Color.WHITE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 

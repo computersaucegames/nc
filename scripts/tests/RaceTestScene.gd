@@ -55,10 +55,11 @@ func create_test_circuit():
 
 func setup_test_pilots():
 	var test_pilots = [
-		{"name": "Nova", "twitch": 7, "craft": 5, "sync": 6, "edge": 8},
-		{"name": "Blaze", "twitch": 6, "craft": 7, "sync": 5, "edge": 6},
-		{"name": "Frost", "twitch": 8, "craft": 6, "sync": 7, "edge": 5},
-		{"name": "Shadow", "twitch": 5, "craft": 8, "sync": 6, "edge": 7}
+		{"name": "Buoy", "twitch": 7, "craft": 5, "sync": 6, "edge": 8, "headshot": "res://resources/art/buoy.png"},
+		{"name": "Cowboy", "twitch": 6, "craft": 7, "sync": 5, "edge": 6, "headshot": "res://resources/art/cowboy.png"},
+		{"name": "Redman", "twitch": 8, "craft": 6, "sync": 7, "edge": 5, "headshot": "res://resources/art/redman.png"},
+		{"name": "Stubble", "twitch": 5, "craft": 8, "sync": 6, "edge": 7, "headshot": "res://resources/art/stubble.png"},
+		{"name": "Poshpaul", "twitch": 6, "craft": 6, "sync": 8, "edge": 6, "headshot": "res://resources/art/poshpaul.png"}
 	]
 
 	# CHANGED: Use PilotStatusPanel to setup pilots
@@ -75,12 +76,13 @@ func setup_test_pilots():
 func _on_start_pressed():
 	# CHANGED: Use race_log method instead of direct output_log calls
 	race_log.log_race_start(test_circuit.circuit_name, test_circuit.total_laps)
-	
+
 	var pilots = [
-		{"name": "Nova", "twitch": 7, "craft": 5, "sync": 6, "edge": 8},
-		{"name": "Blaze", "twitch": 6, "craft": 7, "sync": 5, "edge": 6},
-		{"name": "Frost", "twitch": 8, "craft": 6, "sync": 7, "edge": 5},
-		{"name": "Shadow", "twitch": 5, "craft": 8, "sync": 6, "edge": 7}
+		{"name": "Buoy", "twitch": 7, "craft": 5, "sync": 6, "edge": 8, "headshot": "res://resources/art/buoy.png"},
+		{"name": "Cowboy", "twitch": 6, "craft": 7, "sync": 5, "edge": 6, "headshot": "res://resources/art/cowboy.png"},
+		{"name": "Redman", "twitch": 8, "craft": 6, "sync": 7, "edge": 5, "headshot": "res://resources/art/redman.png"},
+		{"name": "Stubble", "twitch": 5, "craft": 8, "sync": 6, "edge": 7, "headshot": "res://resources/art/stubble.png"},
+		{"name": "Poshpaul", "twitch": 6, "craft": 6, "sync": 8, "edge": 6, "headshot": "res://resources/art/poshpaul.png"}
 	]
 	
 	# CHANGED: Use race_controls to enable pause button
