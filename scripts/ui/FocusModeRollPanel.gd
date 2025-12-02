@@ -4,6 +4,7 @@ class_name FocusModeRollPanel
 ## Individual pilot roll display panel for Focus Mode
 ## Shows full breakdown of roll, stat, modifiers, and result
 
+@onready var vbox: VBoxContainer = $VBox
 @onready var pilot_name_label: Label = $VBox/PilotName
 @onready var sector_label: Label = $VBox/SectorInfo
 @onready var pilot_info_label: Label = $VBox/PilotInfo
@@ -16,6 +17,9 @@ class_name FocusModeRollPanel
 @onready var tier_result: Label = $VBox/RollContainer/TierResult
 @onready var movement_result: Label = $VBox/MovementResult
 @onready var resolution_label: Label = $VBox/ResolutionLabel
+
+# Headshot display (created dynamically)
+var headshot_texture: TextureRect = null
 
 # Theme colors for tiers
 const TIER_COLORS = {
@@ -40,8 +44,24 @@ func _ready():
 	style.corner_radius_bottom_right = 8
 	add_theme_stylebox_override("panel", style)
 
+	# Create headshot texture rect and add it to the top of VBox
+	headshot_texture = TextureRect.new()
+	headshot_texture.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	headshot_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	headshot_texture.custom_minimum_size = Vector2(80, 80)
+	headshot_texture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(headshot_texture)
+	vbox.move_child(headshot_texture, 0)  # Move to top
+
 ## Setup display before roll is made
 func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tied_position: int = -1):
+	# Load and display headshot
+	if headshot_texture and pilot.headshot != "":
+		headshot_texture.texture = load(pilot.headshot)
+		headshot_texture.visible = true
+	elif headshot_texture:
+		headshot_texture.visible = false
+
 	pilot_name_label.text = pilot.name
 
 	# Add W2W context to sector label
@@ -65,6 +85,13 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 ## Setup display with roll results
 func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int, event_type: int = -1, tied_position: int = -1):
 	print("DEBUG: Setting up roll display for %s - tier: %s, movement: %d" % [pilot.name, roll_result.tier_name, movement])
+
+	# Load and display headshot
+	if headshot_texture and pilot.headshot != "":
+		headshot_texture.texture = load(pilot.headshot)
+		headshot_texture.visible = true
+	elif headshot_texture:
+		headshot_texture.visible = false
 
 	pilot_name_label.text = pilot.name
 

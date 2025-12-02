@@ -6,6 +6,7 @@ class_name PilotState
 var pilot_data: Resource  # Will be the full Pilot resource later
 var pilot_id: int = 0  # Index in the pilots array (for UI tracking)
 var name: String = "Unknown"
+var headshot: String = ""  # Path to pilot headshot image
 
 # Race position data
 var current_sector: int = 0
@@ -87,7 +88,8 @@ func get_position_string() -> String:
 func setup_from_dict(data: Dictionary, start_position: int = 1) -> void:
 	name = data.get("name", "Pilot %d" % start_position)
 	position = start_position
-	
+	headshot = data.get("headshot", "")
+
 	if data.has("twitch"):
 		twitch = data.twitch
 		craft = data.craft

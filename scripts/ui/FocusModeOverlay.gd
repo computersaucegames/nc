@@ -92,8 +92,11 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 
 	# Track panel positions to prevent overlaps
 	var placed_panels: Array[Rect2] = []
-	const PANEL_SIZE = Vector2(280, 400)
-	const PANEL_BUFFER = 20.0  # Pixels of spacing between panels
+	const PANEL_SIZE = Vector2(280, 450)  # Increased height to accommodate headshot
+	const PANEL_BUFFER = 30.0  # Increased spacing between panels
+
+	# Get viewport size to keep panels on screen
+	var viewport_size = get_viewport_rect().size
 
 	# Calculate tied position for W2W events
 	var tied_position = -1
@@ -120,31 +123,59 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 		var panel = pilot_roll_panel_scene.instantiate()
 		roll_panel_container.add_child(panel)
 
-		# Position panel near the pilot (offset to avoid covering them)
-		var base_offset = Vector2(60 if pilot_idx == 0 else -260, -100)
-		var final_position = screen_pos + base_offset
+		# Try different placement positions around the pilot
+		var placement_offsets = [
+			Vector2(60, -150),   # Right of pilot
+			Vector2(-340, -150), # Left of pilot
+			Vector2(60, -300),   # Right-high
+			Vector2(-340, -300), # Left-high
+			Vector2(60, 0),      # Right-low
+			Vector2(-340, 0),    # Left-low
+		]
 
-		# Check for overlaps with existing panels and adjust if needed
+		var final_position = screen_pos + placement_offsets[0]
 		var panel_rect = Rect2(final_position, PANEL_SIZE)
-		var adjusted = false
-		var max_attempts = 20  # Prevent infinite loops
+		var found_valid_position = false
 
-		for attempt in range(max_attempts):
+		# Try each placement offset
+		for offset in placement_offsets:
+			final_position = screen_pos + offset
+			panel_rect = Rect2(final_position, PANEL_SIZE)
+
+			# Clamp to viewport bounds
+			final_position.x = clamp(final_position.x, PANEL_BUFFER, viewport_size.x - PANEL_SIZE.x - PANEL_BUFFER)
+			final_position.y = clamp(final_position.y, PANEL_BUFFER, viewport_size.y - PANEL_SIZE.y - PANEL_BUFFER)
+			panel_rect.position = final_position
+
+			# Check for overlaps
 			var overlapping = false
 			for existing_rect in placed_panels:
-				# Check if panels overlap (with buffer zone)
 				var buffered_rect = existing_rect.grow(PANEL_BUFFER)
 				if buffered_rect.intersects(panel_rect):
 					overlapping = true
 					break
 
 			if not overlapping:
+				found_valid_position = true
 				break
 
-			# Move panel down to avoid overlap
-			final_position.y += PANEL_SIZE.y / 4  # Move down by quarter panel height
-			panel_rect.position = final_position
-			adjusted = true
+		# If still overlapping, try stacking vertically with more spacing
+		if not found_valid_position:
+			# Stack below the last placed panel
+			if placed_panels.size() > 0:
+				var last_rect = placed_panels[placed_panels.size() - 1]
+				final_position = Vector2(last_rect.position.x, last_rect.position.y + last_rect.size.y + PANEL_BUFFER)
+
+				# If that goes off screen, try stacking to the side
+				if final_position.y + PANEL_SIZE.y > viewport_size.y - PANEL_BUFFER:
+					final_position.x = last_rect.position.x + last_rect.size.x + PANEL_BUFFER
+					final_position.y = PANEL_BUFFER
+
+					# If still off screen, wrap back to left side
+					if final_position.x + PANEL_SIZE.x > viewport_size.x - PANEL_BUFFER:
+						final_position.x = PANEL_BUFFER
+
+				panel_rect.position = final_position
 
 		# Store this panel's rect for future overlap checks
 		placed_panels.append(panel_rect)
