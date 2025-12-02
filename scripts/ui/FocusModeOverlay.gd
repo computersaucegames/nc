@@ -95,6 +95,14 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 	const PANEL_SIZE = Vector2(280, 400)
 	const PANEL_BUFFER = 20.0  # Pixels of spacing between panels
 
+	# Calculate tied position for W2W events
+	var tied_position = -1
+	if event.event_type == FocusModeManager.EventType.WHEEL_TO_WHEEL_ROLL and event.pilots.size() > 0:
+		# Find the higher position between the two pilots (lower number = better position)
+		var pos1 = event.pilots[0].position
+		var pos2 = event.pilots[1].position if event.pilots.size() > 1 else pos1
+		tied_position = min(pos1, pos2)
+
 	# Get pilot positions on screen
 	for pilot_idx in range(event.pilots.size()):
 		var pilot = event.pilots[pilot_idx]
@@ -148,10 +156,10 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 			# Show roll results
 			var roll_result = event.roll_results[pilot_idx]
 			var movement = event.movement_outcomes[pilot_idx]
-			panel.setup_roll_display(pilot, event.sector, roll_result, movement)
+			panel.setup_roll_display(pilot, event.sector, roll_result, movement, event.event_type, tied_position)
 		else:
 			# Waiting for rolls - show pilot and sector info
-			panel.setup_pre_roll_display(pilot, event.sector)
+			panel.setup_pre_roll_display(pilot, event.sector, event.event_type, tied_position)
 
 func _get_pilot_screen_position(pilot_id: int) -> Variant:
 	if circuit_display == null or not circuit_display.pilot_markers.has(pilot_id):

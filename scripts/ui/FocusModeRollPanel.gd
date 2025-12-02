@@ -41,13 +41,21 @@ func _ready():
 	add_theme_stylebox_override("panel", style)
 
 ## Setup display before roll is made
-func setup_pre_roll_display(pilot: PilotState, sector):
+func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tied_position: int = -1):
 	pilot_name_label.text = pilot.name
-	sector_label.text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
 
-	# Show pilot current stats
+	# Add W2W context to sector label
+	var sector_text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
+	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
+		sector_text = "W2W Focus Mode - " + sector_text
+	sector_label.text = sector_text
+
+	# Show pilot current stats with tied position if in W2W mode
 	var stat_value = pilot.get_stat(sector.check_type)
-	pilot_info_label.text = "Position: %d | %s: +%d" % [pilot.position, sector.get_check_type_string().capitalize(), stat_value]
+	if tied_position > 0:
+		pilot_info_label.text = "Tied for P%d | %s: +%d" % [tied_position, sector.get_check_type_string().capitalize(), stat_value]
+	else:
+		pilot_info_label.text = "Position: %d | %s: +%d" % [pilot.position, sector.get_check_type_string().capitalize(), stat_value]
 
 	# Hide roll results until rolled
 	roll_container.visible = false
@@ -55,14 +63,22 @@ func setup_pre_roll_display(pilot: PilotState, sector):
 	resolution_label.visible = false
 
 ## Setup display with roll results
-func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int):
+func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int, event_type: int = -1, tied_position: int = -1):
 	print("DEBUG: Setting up roll display for %s - tier: %s, movement: %d" % [pilot.name, roll_result.tier_name, movement])
 
 	pilot_name_label.text = pilot.name
-	sector_label.text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
 
-	# Show pilot info
-	pilot_info_label.text = "Position: %d | Status: %s" % [pilot.position, pilot.get_status_string()]
+	# Add W2W context to sector label
+	var sector_text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
+	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
+		sector_text = "W2W Focus Mode - " + sector_text
+	sector_label.text = sector_text
+
+	# Show pilot info with tied position if in W2W mode
+	if tied_position > 0:
+		pilot_info_label.text = "Tied for P%d | Status: %s" % [tied_position, pilot.get_status_string()]
+	else:
+		pilot_info_label.text = "Position: %d | Status: %s" % [pilot.position, pilot.get_status_string()]
 
 	# Show roll breakdown
 	roll_container.visible = true
