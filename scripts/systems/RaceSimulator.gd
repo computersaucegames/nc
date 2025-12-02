@@ -118,10 +118,17 @@ func _on_race_start_focus_advance(event: FocusModeManager.FocusModeEvent):
 func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 	var start_sector = event.sector
 
+	# Prepare gates from sector thresholds
+	var gates = {
+		"grey": start_sector.grey_threshold,
+		"green": start_sector.green_threshold,
+		"purple": start_sector.purple_threshold
+	}
+
 	# Roll twitch for all pilots (regardless of sector type)
 	for pilot in pilots:
 		pilot_rolling.emit(pilot, start_sector)
-		var roll = Dice.roll_d20(pilot.twitch, "twitch", [], {}, {
+		var roll = Dice.roll_d20(pilot.twitch, "twitch", [], gates, {
 			"context": "race_start",
 			"pilot": pilot.name
 		})
