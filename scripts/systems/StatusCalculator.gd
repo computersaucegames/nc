@@ -125,12 +125,9 @@ static func _detect_duels(pilots: Array) -> void:
 # Calculate gap between two pilots
 static func calculate_gap_between(pilot1, pilot2) -> int:
 	# Returns positive if pilot2 is ahead, negative if behind, 0 if equal
-	# First check if they're in the same sector
-	if pilot1.current_sector == pilot2.current_sector:
-		return pilot2.gap_in_sector - pilot1.gap_in_sector
-	else:
-		# Use total distance for pilots in different sectors
-		return pilot2.total_distance - pilot1.total_distance
+	# Always use total_distance for accurate position comparison
+	# (gap_in_sector alone can be misleading when pilots just entered a new sector)
+	return pilot2.total_distance - pilot1.total_distance
 
 # Get wheel-to-wheel pairs from current statuses
 static func get_wheel_to_wheel_pairs(pilots: Array) -> Array:
