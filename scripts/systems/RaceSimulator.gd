@@ -135,8 +135,8 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 		pilot_rolled.emit(pilot, roll)
 		event.roll_results.append(roll)
 
-		# Calculate movement for this roll
-		var movement = start_sector.get_movement_for_roll(roll.tier)
+		# Calculate movement for this roll (use final_total, not tier enum!)
+		var movement = start_sector.get_movement_for_roll(roll.final_total)
 		event.movement_outcomes.append(movement)
 
 	# Sort pilots by twitch roll (highest first), ties broken by grid_position (lowest first)
