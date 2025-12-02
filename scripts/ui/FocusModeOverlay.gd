@@ -87,7 +87,7 @@ func _clear_panels():
 
 func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 	const PANEL_SIZE = Vector2(280, 450)  # Increased height to accommodate headshot
-	const PANEL_SPACING = 20.0  # Horizontal spacing between panels
+	const PANEL_SPACING = 40.0  # Horizontal spacing between panels
 	const BOTTOM_MARGIN = 80.0  # Space from bottom of screen (to leave room for continue prompt)
 	const SIDE_MARGIN = 20.0  # Space from sides of screen
 
