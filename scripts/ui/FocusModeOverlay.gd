@@ -86,16 +86,12 @@ func _clear_panels():
 		child.queue_free()
 
 func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
-	if circuit_display == null:
-		print("WARNING: No circuit display set for FocusModeOverlay")
-		return
-
-	# Track panel positions to prevent overlaps
-	var placed_panels: Array[Rect2] = []
 	const PANEL_SIZE = Vector2(280, 450)  # Increased height to accommodate headshot
-	const PANEL_BUFFER = 30.0  # Increased spacing between panels
+	const PANEL_SPACING = 20.0  # Horizontal spacing between panels
+	const BOTTOM_MARGIN = 80.0  # Space from bottom of screen (to leave room for continue prompt)
+	const SIDE_MARGIN = 20.0  # Space from sides of screen
 
-	# Get viewport size to keep panels on screen
+	# Get viewport size
 	var viewport_size = get_viewport_rect().size
 
 	# Calculate tied position for W2W events
@@ -106,81 +102,36 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 		var pos2 = event.pilots[1].position if event.pilots.size() > 1 else pos1
 		tied_position = min(pos1, pos2)
 
-	# Get pilot positions on screen
+	# Calculate total width needed for all panels
+	var num_panels = event.pilots.size()
+	var total_width = (num_panels * PANEL_SIZE.x) + ((num_panels - 1) * PANEL_SPACING)
+
+	# Calculate starting X position to center the panels
+	var start_x = (viewport_size.x - total_width) / 2.0
+
+	# Clamp to ensure panels don't go off screen
+	start_x = max(start_x, SIDE_MARGIN)
+
+	# Calculate Y position (bottom of screen, with margin)
+	var panel_y = viewport_size.y - PANEL_SIZE.y - BOTTOM_MARGIN
+
+	# Create panels for each pilot, arranged horizontally at the bottom
 	for pilot_idx in range(event.pilots.size()):
 		var pilot = event.pilots[pilot_idx]
 		var pilot_id = _get_pilot_id_from_state(pilot)
-
-		if pilot_id == -1:
-			continue
-
-		# Get screen position of the pilot on the circuit
-		var screen_pos = _get_pilot_screen_position(pilot_id)
-		if screen_pos == null:
-			continue
 
 		# Create panel for this pilot
 		var panel = pilot_roll_panel_scene.instantiate()
 		roll_panel_container.add_child(panel)
 
-		# Try different placement positions around the pilot
-		var placement_offsets = [
-			Vector2(60, -150),   # Right of pilot
-			Vector2(-340, -150), # Left of pilot
-			Vector2(60, -300),   # Right-high
-			Vector2(-340, -300), # Left-high
-			Vector2(60, 0),      # Right-low
-			Vector2(-340, 0),    # Left-low
-		]
+		# Calculate position for this panel
+		var panel_x = start_x + (pilot_idx * (PANEL_SIZE.x + PANEL_SPACING))
 
-		var final_position = screen_pos + placement_offsets[0]
-		var panel_rect = Rect2(final_position, PANEL_SIZE)
-		var found_valid_position = false
+		# Ensure panel doesn't go off the right edge
+		if panel_x + PANEL_SIZE.x > viewport_size.x - SIDE_MARGIN:
+			panel_x = viewport_size.x - PANEL_SIZE.x - SIDE_MARGIN
 
-		# Try each placement offset
-		for offset in placement_offsets:
-			final_position = screen_pos + offset
-			panel_rect = Rect2(final_position, PANEL_SIZE)
-
-			# Clamp to viewport bounds
-			final_position.x = clamp(final_position.x, PANEL_BUFFER, viewport_size.x - PANEL_SIZE.x - PANEL_BUFFER)
-			final_position.y = clamp(final_position.y, PANEL_BUFFER, viewport_size.y - PANEL_SIZE.y - PANEL_BUFFER)
-			panel_rect.position = final_position
-
-			# Check for overlaps
-			var overlapping = false
-			for existing_rect in placed_panels:
-				var buffered_rect = existing_rect.grow(PANEL_BUFFER)
-				if buffered_rect.intersects(panel_rect):
-					overlapping = true
-					break
-
-			if not overlapping:
-				found_valid_position = true
-				break
-
-		# If still overlapping, try stacking vertically with more spacing
-		if not found_valid_position:
-			# Stack below the last placed panel
-			if placed_panels.size() > 0:
-				var last_rect = placed_panels[placed_panels.size() - 1]
-				final_position = Vector2(last_rect.position.x, last_rect.position.y + last_rect.size.y + PANEL_BUFFER)
-
-				# If that goes off screen, try stacking to the side
-				if final_position.y + PANEL_SIZE.y > viewport_size.y - PANEL_BUFFER:
-					final_position.x = last_rect.position.x + last_rect.size.x + PANEL_BUFFER
-					final_position.y = PANEL_BUFFER
-
-					# If still off screen, wrap back to left side
-					if final_position.x + PANEL_SIZE.x > viewport_size.x - PANEL_BUFFER:
-						final_position.x = PANEL_BUFFER
-
-				panel_rect.position = final_position
-
-		# Store this panel's rect for future overlap checks
-		placed_panels.append(panel_rect)
-
-		panel.position = final_position
+		panel.position = Vector2(panel_x, panel_y)
 
 		# Setup panel data
 		if event.roll_results.size() > pilot_idx:
