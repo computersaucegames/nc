@@ -161,7 +161,10 @@ func _on_pilot_rolling(pilot, sector):
 	else:
 		gap_ahead = "Leading"
 
-	race_log.log_pilot_rolling(pilot.name, sector.sector_name, pilot.total_distance, total_gaps, status, sector_progress, gap_ahead)
+	# Calculate gap within current lap (resets each lap)
+	var current_lap_gap = pilot.total_distance % total_gaps if total_gaps > 0 else 0
+
+	race_log.log_pilot_rolling(pilot.name, sector.sector_name, current_lap_gap, total_gaps, status, sector_progress, gap_ahead)
 
 func _on_pilot_rolled(pilot, result: Dice.DiceResult):
 	race_log.log_pilot_rolled(pilot.name, result)
