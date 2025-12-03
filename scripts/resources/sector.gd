@@ -31,11 +31,13 @@ enum CheckType {
 @export var purple_movement: int = 4 # Critical - maximum progress
 
 # Optional: Specific failure consequences for this sector
+@export_group("Failure Table")
 @export var failure_table: Array[String] = [
 	"Spin out - lose 1 Gap",
-	"Lock up brakes - lose 2 Gap", 
+	"Lock up brakes - lose 2 Gap",
 	"Wide line - no penalty"
 ]
+@export var failure_table_check_type: CheckType = CheckType.EDGE  # Skill check for failure table roll
 
 func get_movement_for_roll(roll_value: int) -> int:
 	if roll_value < grey_threshold:

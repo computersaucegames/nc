@@ -19,7 +19,8 @@ enum EventType {
 	OVERTAKE_ATTEMPT,
 	RACE_START,
 	FINAL_LAP,
-	PHOTO_FINISH
+	PHOTO_FINISH,
+	RED_RESULT  # Failure table roll
 }
 
 # Focus Mode Event data structure
@@ -74,6 +75,8 @@ func should_trigger(event: FocusModeEvent) -> bool:
 			return config.enable_final_lap
 		EventType.PHOTO_FINISH:
 			return config.enable_photo_finish
+		EventType.RED_RESULT:
+			return config.enable_red_result
 
 	return false
 
@@ -99,4 +102,13 @@ func create_race_start_event(pilots: Array, sector) -> FocusModeEvent:
 	event.pilots = pilots.duplicate()  # All pilots
 	event.sector = sector
 	event.metadata["position_context"] = "Race Start"
+	return event
+
+# Helper to create red result / failure table event
+func create_red_result_event(pilot, sector, initial_roll_result) -> FocusModeEvent:
+	var event = FocusModeEvent.new(EventType.RED_RESULT)
+	event.pilots = [pilot]
+	event.sector = sector
+	event.metadata["position_context"] = "Failure Table"
+	event.metadata["initial_roll"] = initial_roll_result  # The red roll that triggered this
 	return event

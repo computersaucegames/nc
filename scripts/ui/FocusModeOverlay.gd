@@ -138,7 +138,7 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 			# Show roll results
 			var roll_result = event.roll_results[pilot_idx]
 			var movement = event.movement_outcomes[pilot_idx]
-			panel.setup_roll_display(pilot, event.sector, roll_result, movement, event.event_type, tied_position)
+			panel.setup_roll_display(pilot, event.sector, roll_result, movement, event.event_type, tied_position, event.metadata)
 		else:
 			# Waiting for rolls - show pilot and sector info
 			panel.setup_pre_roll_display(pilot, event.sector, event.event_type, tied_position)
