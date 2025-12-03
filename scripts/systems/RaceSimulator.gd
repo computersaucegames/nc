@@ -27,6 +27,7 @@ signal pilot_finished(pilot: PilotState, finish_position: int)
 signal wheel_to_wheel_detected(pilot1: PilotState, pilot2: PilotState)
 signal duel_started(pilot1: PilotState, pilot2: PilotState, round_number: int)
 signal focus_mode_triggered(pilots: Array, reason: String)
+signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: String)
 signal race_finished(final_positions: Array)
 
 # Race states
@@ -619,6 +620,9 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 
 # Process red result in Focus Mode (failure table)
 func process_red_result_focus_mode(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult):
+	# Emit focus mode trigger event
+	focus_mode_triggered.emit([pilot], "Failure Table - %s" % sector.sector_name)
+
 	# Create Focus Mode event for red result
 	var event = FocusMode.create_red_result_event(pilot, sector, initial_roll)
 
@@ -659,6 +663,9 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	var failure_result = FailureTableRes.resolve_failure(pilot, sector)
 	var failure_roll = failure_result.roll_result
 	var consequence = failure_result.consequence_text
+
+	# Emit failure table result event
+	failure_table_triggered.emit(pilot, sector, consequence)
 
 	# Store failure data in event
 	event.roll_results = [failure_roll]
