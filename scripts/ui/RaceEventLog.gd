@@ -164,6 +164,11 @@ func log_duel_started(pilot1_name: String, pilot2_name: String, round_number: in
 func log_focus_mode(reason: String):
 	output_log.append_text("[b][color=red]🎯 FOCUS MODE: %s[/color][/b]\n" % reason)
 
+func log_failure_table(pilot_name: String, sector_name: String, consequence: String):
+	output_log.append_text("[b][color=red]💥 FAILURE TABLE! %s at %s: %s[/color][/b]\n" % [
+		pilot_name, sector_name, consequence
+	])
+
 func log_race_finished(final_positions: Array):
 	output_log.append_text("\n[b][color=gold]🏆 RACE FINISHED![/color][/b]\n")
 	output_log.append_text("Final Results:\n")
