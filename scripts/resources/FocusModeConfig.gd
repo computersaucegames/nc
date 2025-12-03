@@ -9,6 +9,7 @@ class_name FocusModeConfig
 @export var enable_race_start: bool = true
 @export var enable_final_lap: bool = false
 @export var enable_photo_finish: bool = false
+@export var enable_red_result: bool = true  # Trigger failure table on red rolls
 
 # Position filtering (0 = all positions)
 @export var only_top_n_positions: int = 0  # e.g., 3 = only trigger for positions 1-3

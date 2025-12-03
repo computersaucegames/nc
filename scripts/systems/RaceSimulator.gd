@@ -6,6 +6,7 @@ const StatusCalc = preload("res://scripts/systems/StatusCalculator.gd")
 const OvertakeRes = preload("res://scripts/systems/OvertakeResolver.gd")
 const MoveProc = preload("res://scripts/systems/MovementProcessor.gd")
 const StartHandler = preload("res://scripts/systems/RaceStartHandler.gd")
+const FailureTableRes = preload("res://scripts/systems/FailureTableResolver.gd")
 
 # Signals for the event-heavy system
 signal race_started(circuit: Circuit, pilots: Array)
@@ -315,6 +316,11 @@ func process_pilot_turn(pilot: PilotState):
 	var roll_result = make_pilot_roll(pilot, sector)
 	pilot_rolled.emit(pilot, roll_result)
 
+	# Check if this is a red result - trigger failure table focus mode
+	if roll_result.tier == Dice.Tier.RED:
+		process_red_result_focus_mode(pilot, sector, roll_result)
+		return  # Exit - will resume after focus mode
+
 	# Calculate base movement
 	var base_movement = MoveProc.calculate_base_movement(sector, roll_result)
 
@@ -611,9 +617,85 @@ func _apply_w2w_movement(pilot1: PilotState, pilot2: PilotState, event: FocusMod
 
 	handle_movement_results(pilot2, move_result2)
 
-	# Mark both pilots as processed for this round
-	pilots_processed_this_round.append(pilot1)
-	pilots_processed_this_round.append(pilot2)
+# Process red result in Focus Mode (failure table)
+func process_red_result_focus_mode(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult):
+	# Create Focus Mode event for red result
+	var event = FocusMode.create_red_result_event(pilot, sector, initial_roll)
+
+	# Enter Focus Mode state
+	race_mode = RaceMode.FOCUS_MODE
+
+	# Connect to Focus Mode advance signal
+	current_focus_advance_callback = func():
+		_on_red_result_focus_advance(pilot, sector, initial_roll, event)
+	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
+
+	# Activate Focus Mode (UI will display)
+	FocusMode.activate(event)
+
+# Handle Focus Mode advancement for red result
+func _on_red_result_focus_advance(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult, event: FocusModeManager.FocusModeEvent):
+	# Check what stage we're in
+	if event.roll_results.size() == 0:
+		# Stage 1: Roll on the failure table
+		_execute_failure_table_roll(pilot, sector, initial_roll, event)
+	else:
+		# Stage 2: Apply movement and deactivate
+		_apply_red_result_movement(pilot, sector, initial_roll, event)
+
+		# Disconnect the advance callback
+		if current_focus_advance_callback.is_valid():
+			FocusMode.focus_mode_advance_requested.disconnect(current_focus_advance_callback)
+
+		FocusMode.deactivate()
+		race_mode = RaceMode.RUNNING
+
+		# Resume the current round to process remaining pilots
+		resume_round()
+
+# Execute failure table roll
+func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult, event: FocusModeManager.FocusModeEvent):
+	# Roll on the failure table
+	var failure_result = FailureTableRes.resolve_failure(pilot, sector)
+	var failure_roll = failure_result.roll_result
+	var consequence = failure_result.consequence_text
+
+	# Store failure data in event
+	event.roll_results = [failure_roll]
+	event.metadata["consequence"] = consequence
+	event.metadata["initial_roll"] = initial_roll
+
+	# Calculate movement (base red_movement from sector)
+	var base_movement = sector.red_movement
+	event.movement_outcomes = [base_movement]
+
+	# Re-emit event to update UI with failure table results
+	FocusMode.focus_mode_activated.emit(event)
+
+# Apply movement after red result and failure table shown
+func _apply_red_result_movement(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult, event: FocusModeManager.FocusModeEvent):
+	var base_movement = event.movement_outcomes[0]
+
+	# Handle overtaking
+	var final_movement = handle_overtaking(pilot, base_movement, sector)
+	# Check for capacity blocking
+	final_movement = check_capacity_blocking(pilot, final_movement, sector)
+
+	# Capture state before movement
+	var start_gap = pilot.gap_in_sector
+	var start_distance = pilot.total_distance
+
+	# Apply movement
+	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
+	pilot_moved.emit(pilot, final_movement)
+
+	# Emit detailed movement info
+	var sector_completed = move_result.sectors_completed.size() > 0
+	var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
+	pilot_movement_details.emit(pilot.name, start_gap, start_distance, final_movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
+
+	# Handle sector/lap completion
+	handle_movement_results(pilot, move_result)
 
 # Exit focus mode and continue racing
 func exit_focus_mode():

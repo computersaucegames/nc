@@ -64,18 +64,23 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 
 	pilot_name_label.text = pilot.name
 
-	# Add W2W context to sector label
-	var sector_text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
+	# Add context to sector label based on event type
+	# For failure tables, use the failure_table_check_type instead of normal check_type
+	var check_type = sector.failure_table_check_type if event_type == 5 else sector.check_type
+	var check_type_str = _get_check_type_string(check_type)
+	var sector_text = "Sector: %s (%s)" % [sector.sector_name, check_type_str.to_upper()]
 	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
 		sector_text = "W2W Focus Mode - " + sector_text
+	elif event_type == 5:  # RED_RESULT (Failure Table)
+		sector_text = "Failure Table - " + sector_text
 	sector_label.text = sector_text
 
 	# Show pilot current stats with tied position if in W2W mode
-	var stat_value = pilot.get_stat(sector.check_type)
+	var stat_value = pilot.get_stat(check_type)
 	if tied_position > 0:
-		pilot_info_label.text = _format_pilot_info("Tied for P%d" % tied_position, "%s: +%d" % [sector.get_check_type_string().capitalize(), stat_value])
+		pilot_info_label.text = _format_pilot_info("Tied for P%d" % tied_position, "%s: +%d" % [check_type_str.capitalize(), stat_value])
 	else:
-		pilot_info_label.text = _format_pilot_info("Position: %d" % pilot.position, "%s: +%d" % [sector.get_check_type_string().capitalize(), stat_value])
+		pilot_info_label.text = _format_pilot_info("Position: %d" % pilot.position, "%s: +%d" % [check_type_str.capitalize(), stat_value])
 
 	# Hide roll results until rolled
 	roll_container.visible = false
@@ -83,7 +88,7 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 	resolution_label.visible = false
 
 ## Setup display with roll results
-func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int, event_type: int = -1, tied_position: int = -1):
+func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int, event_type: int = -1, tied_position: int = -1, event_metadata: Dictionary = {}):
 	print("DEBUG: Setting up roll display for %s - tier: %s, movement: %d" % [pilot.name, roll_result.tier_name, movement])
 
 	# Load and display headshot
@@ -95,10 +100,15 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 
 	pilot_name_label.text = pilot.name
 
-	# Add W2W context to sector label
-	var sector_text = "Sector: %s (%s)" % [sector.sector_name, sector.get_check_type_string().to_upper()]
+	# Add context to sector label based on event type
+	# For failure tables, show the failure_table_check_type instead
+	var check_type_for_display = sector.failure_table_check_type if event_type == 5 else sector.check_type
+	var check_type_str = _get_check_type_string(check_type_for_display)
+	var sector_text = "Sector: %s (%s)" % [sector.sector_name, check_type_str.to_upper()]
 	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
 		sector_text = "W2W Focus Mode - " + sector_text
+	elif event_type == 5:  # RED_RESULT (Failure Table)
+		sector_text = "Failure Table - " + sector_text
 	sector_label.text = sector_text
 
 	# Show pilot info with tied position if in W2W mode
@@ -165,7 +175,7 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 
 	# Resolution text
 	resolution_label.visible = true
-	var resolution_text = _get_resolution_text(pilot.name, roll_result.tier_name, movement)
+	var resolution_text = _get_resolution_text(pilot.name, roll_result.tier_name, movement, event_type, event_metadata)
 	resolution_label.text = resolution_text
 	resolution_label.add_theme_font_size_override("font_size", 14)
 	resolution_label.add_theme_color_override("font_color", TIER_COLORS.get(roll_result.tier_name, Color.WHITE))
@@ -191,7 +201,12 @@ func _calculate_potential_momentum_text(pilot: PilotState, sector, movement: int
 			return " (+%d momentum)" % potential_momentum
 	return ""
 
-func _get_resolution_text(pilot_name: String, tier: String, movement: int) -> String:
+func _get_resolution_text(pilot_name: String, tier: String, movement: int, event_type: int = -1, event_metadata: Dictionary = {}) -> String:
+	# If this is a failure table event, show the consequence
+	if event_type == 5 and event_metadata.has("consequence"):  # RED_RESULT
+		return "%s: %s" % [pilot_name, event_metadata["consequence"]]
+
+	# Otherwise use standard resolution text
 	match tier:
 		"PURPLE":
 			return "%s surges ahead!" % pilot_name
@@ -203,3 +218,16 @@ func _get_resolution_text(pilot_name: String, tier: String, movement: int) -> St
 			return "%s struggles!" % pilot_name
 		_:
 			return "%s advances" % pilot_name
+
+func _get_check_type_string(check_type: Sector.CheckType) -> String:
+	match check_type:
+		Sector.CheckType.TWITCH:
+			return "twitch"
+		Sector.CheckType.CRAFT:
+			return "craft"
+		Sector.CheckType.SYNC:
+			return "sync"
+		Sector.CheckType.EDGE:
+			return "edge"
+		_:
+			return "unknown"
