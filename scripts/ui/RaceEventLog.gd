@@ -169,6 +169,16 @@ func log_failure_table(pilot_name: String, sector_name: String, consequence: Str
 		pilot_name, sector_name, consequence
 	])
 
+func log_overflow_penalty_deferred(pilot_name: String, penalty_gaps: int):
+	output_log.append_text("[b][color=orange]⚠️ PENALTY OVERFLOW! %s will lose %d Gap on next turn[/color][/b]\n" % [
+		pilot_name, penalty_gaps
+	])
+
+func log_overflow_penalty_applied(pilot_name: String, penalty_gaps: int):
+	output_log.append_text("[b][color=orange]⚠️ PENALTY APPLIED! %s loses %d Gap from previous failure[/color][/b]\n" % [
+		pilot_name, penalty_gaps
+	])
+
 func log_race_finished(final_positions: Array):
 	output_log.append_text("\n[b][color=gold]🏆 RACE FINISHED![/color][/b]\n")
 	output_log.append_text("Final Results:\n")

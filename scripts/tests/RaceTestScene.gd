@@ -60,6 +60,8 @@ func setup_race_simulator():
 	race_sim.duel_started.connect(_on_duel_started)
 	race_sim.focus_mode_triggered.connect(_on_focus_mode)
 	race_sim.failure_table_triggered.connect(_on_failure_table)
+	race_sim.overflow_penalty_deferred.connect(_on_overflow_penalty_deferred)
+	race_sim.overflow_penalty_applied.connect(_on_overflow_penalty_applied)
 	race_sim.race_finished.connect(_on_race_finished)
 
 func create_test_circuit():
@@ -231,6 +233,12 @@ func _on_focus_mode(pilots: Array, reason: String):
 
 func _on_failure_table(pilot: PilotState, sector: Sector, consequence: String):
 	race_log.log_failure_table(pilot.name, sector.sector_name, consequence)
+
+func _on_overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int):
+	race_log.log_overflow_penalty_deferred(pilot.name, penalty_gaps)
+
+func _on_overflow_penalty_applied(pilot: PilotState, penalty_gaps: int):
+	race_log.log_overflow_penalty_applied(pilot.name, penalty_gaps)
 
 func _on_race_finished(final_positions: Array):
 	race_log.log_race_finished(final_positions)
