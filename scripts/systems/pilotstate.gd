@@ -38,6 +38,9 @@ var last_w2w_partner_name: String = ""  # Who we were W2W with last round
 # Race start effects
 var has_poor_start: bool = false  # Will have disadvantage on first roll
 
+# Badge system state tracking
+var badge_states: Dictionary = {}  # Tracks runtime state for each badge (e.g., consecutive rounds)
+
 # Failure table effects
 var penalty_next_turn: int = 0  # Gap penalty to apply on next roll (from overflow)
 

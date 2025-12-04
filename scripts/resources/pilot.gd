@@ -14,10 +14,13 @@ enum StatType {
 @export var pilot_bio: String = "Example bio. He did that!"  
 
 @export_group("Stats")
-@export var TWITCH: int = 1 
+@export var TWITCH: int = 1
 @export var CRAFT: int = 1
 @export var SYNC: int = 1
 @export var EDGE: int = 1
+
+@export_group("Badges")
+@export var equipped_badges: Array[Badge] = []
 
 
 

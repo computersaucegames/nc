@@ -75,6 +75,9 @@ func start_race(circuit: Circuit, pilot_list: Array):
 	# Use StartHandler to setup grid
 	StartHandler.form_starting_grid(pilots, circuit)
 
+	# Initialize badge states for all pilots
+	BadgeSystem.reset_all_badge_states(pilots)
+
 	race_started.emit(current_circuit, pilots)
 
 	# Don't execute race start yet - wait for UI to show grid and user to confirm
@@ -133,7 +136,15 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 	# Roll twitch for all pilots (regardless of sector type)
 	for pilot in pilots:
 		pilot_rolling.emit(pilot, start_sector)
-		var roll = Dice.roll_d20(pilot.twitch, "twitch", [], gates, {
+
+		# Get badge modifiers for race start
+		var modifiers = BadgeSystem.get_active_modifiers(pilot, {
+			"roll_type": "race_start",
+			"is_race_start": true,
+			"sector": start_sector
+		})
+
+		var roll = Dice.roll_d20(pilot.twitch, "twitch", modifiers, gates, {
 			"context": "race_start",
 			"pilot": pilot.name
 		})
@@ -244,6 +255,9 @@ func process_round():
 	# Calculate all pilot statuses
 	StatusCalc.calculate_all_statuses(pilots)
 
+	# Update badge states based on new statuses
+	BadgeSystem.update_all_badge_states(pilots)
+
 	# Check for wheel-to-wheel situations
 	current_round_w2w_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
 	for pair in current_round_w2w_pairs:
@@ -269,6 +283,9 @@ func resume_round():
 	# Update positions and statuses after W2W resolution
 	MoveProc.update_all_positions(pilots)
 	StatusCalc.calculate_all_statuses(pilots)
+
+	# Update badge states based on new statuses
+	BadgeSystem.update_all_badge_states(pilots)
 
 	# Continue processing remaining pilots
 	_process_pilots_from_index(0)  # Will skip already-processed pilots
@@ -367,13 +384,19 @@ func process_pilot_turn(pilot: PilotState):
 func make_pilot_roll(pilot: PilotState, sector: Sector) -> Dice.DiceResult:
 	var stat_value = pilot.get_stat(sector.check_type)  # This works fine now!
 	var modifiers = []
-	
+
 	# Apply poor start disadvantage if applicable
 	if pilot.has_poor_start and current_round == 1:
 		modifiers.append(Dice.create_disadvantage("Poor Start"))
 		pilot.has_poor_start = false
-	
-	# Future: Add modifiers from badges, status effects, etc.
+
+	# Add modifiers from badges
+	var badge_mods = BadgeSystem.get_active_modifiers(pilot, {
+		"roll_type": "movement",
+		"sector": sector,
+		"round": current_round
+	})
+	modifiers.append_array(badge_mods)
 	
 	var gates = {
 		"grey": sector.grey_threshold,
