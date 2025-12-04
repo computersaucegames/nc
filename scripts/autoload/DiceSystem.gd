@@ -157,18 +157,31 @@ func roll_d20(
 	result.final_total = result.base_roll + active_stat_value + flat_bonus
 	
 	# Determine base tier from gates
-	if result.final_total < gates.get("grey", DEFAULT_GATES["grey"]):
+	var grey_gate = gates.get("grey", DEFAULT_GATES["grey"])
+	var green_gate = gates.get("green", DEFAULT_GATES["green"])
+	var purple_gate = gates.get("purple", DEFAULT_GATES["purple"])
+
+	# DEBUG: Log tier calculation
+	print("  DEBUG Tier calc: final_total=%d, gates(grey=%d, green=%d, purple=%d)" % [
+		result.final_total, grey_gate, green_gate, purple_gate
+	])
+
+	if result.final_total < grey_gate:
 		result.tier = Tier.RED
 		result.tier_name = "RED"
-	elif result.final_total < gates.get("green", DEFAULT_GATES["green"]):
+		print("  -> Tier: RED (total %d < grey %d)" % [result.final_total, grey_gate])
+	elif result.final_total < green_gate:
 		result.tier = Tier.GREY
 		result.tier_name = "GREY"
-	elif result.final_total < gates.get("purple", DEFAULT_GATES["purple"]):
+		print("  -> Tier: GREY (total %d < green %d)" % [result.final_total, green_gate])
+	elif result.final_total < purple_gate:
 		result.tier = Tier.GREEN
 		result.tier_name = "GREEN"
+		print("  -> Tier: GREEN (total %d < purple %d)" % [result.final_total, purple_gate])
 	else:
 		result.tier = Tier.PURPLE
 		result.tier_name = "PURPLE"
+		print("  -> Tier: PURPLE (total %d >= purple %d)" % [result.final_total, purple_gate])
 	
 	# Apply tier modifications (min tier, tier shift)
 	for mod in modifiers:
