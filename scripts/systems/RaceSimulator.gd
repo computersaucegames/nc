@@ -663,6 +663,7 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	var failure_result = FailureTableRes.resolve_failure(pilot, sector)
 	var failure_roll = failure_result.roll_result
 	var consequence = failure_result.consequence_text
+	var penalty_gaps = failure_result.penalty_gaps
 
 	# Emit failure table result event
 	failure_table_triggered.emit(pilot, sector, consequence)
@@ -671,9 +672,10 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	event.roll_results = [failure_roll]
 	event.metadata["consequence"] = consequence
 	event.metadata["initial_roll"] = initial_roll
+	event.metadata["penalty_gaps"] = penalty_gaps
 
-	# Calculate movement (base red_movement from sector)
-	var base_movement = sector.red_movement
+	# Calculate movement (base red_movement minus penalty, minimum 0)
+	var base_movement = max(0, sector.red_movement - penalty_gaps)
 	event.movement_outcomes = [base_movement]
 
 	# Re-emit event to update UI with failure table results
