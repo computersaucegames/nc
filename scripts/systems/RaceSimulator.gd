@@ -319,6 +319,12 @@ func process_pilot_turn(pilot: PilotState):
 	var roll_result = make_pilot_roll(pilot, sector)
 	pilot_rolled.emit(pilot, roll_result)
 
+	# TODO: Issue #3 - Consecutive RED results lose first overflow penalty
+	# If pilot has penalty_next_turn > 0 and rolls RED again, the RED check below
+	# skips penalty application (lines 330-336), causing the first penalty to be lost.
+	# Consider moving penalty application to before this RED check, or accumulating penalties.
+	# See KNOWN_ISSUES.md for details.
+
 	# Check if this is a red result - trigger failure table focus mode
 	if roll_result.tier == Dice.Tier.RED:
 		process_red_result_focus_mode(pilot, sector, roll_result)
@@ -566,6 +572,11 @@ func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: Focus
 
 # Execute rolls for both W2W pilots
 func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
+	# TODO: Issue #1 - Overflow penalties not applied during W2W focus mode
+	# This function bypasses the normal process_pilot_turn() flow, which means
+	# penalty_next_turn is never applied for pilots in W2W. Need to apply
+	# overflow penalties here before rolling. See KNOWN_ISSUES.md for details.
+
 	var sector = event.sector
 
 	# Roll for both pilots
@@ -579,6 +590,12 @@ func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusMode
 
 	# Store rolls in event
 	event.roll_results = [roll1, roll2]
+
+	# TODO: Issue #2 - RED results during W2W don't trigger failure tables
+	# If either pilot rolls RED here, they just get red_movement without
+	# triggering a failure table. This may be intentional (to avoid nested
+	# focus modes), but should be documented or reconsidered.
+	# See KNOWN_ISSUES.md for details.
 
 	# Calculate movement outcomes
 	var movement1 = MoveProc.calculate_base_movement(sector, roll1)
