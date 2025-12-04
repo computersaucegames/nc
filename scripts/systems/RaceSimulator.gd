@@ -28,6 +28,8 @@ signal wheel_to_wheel_detected(pilot1: PilotState, pilot2: PilotState)
 signal duel_started(pilot1: PilotState, pilot2: PilotState, round_number: int)
 signal focus_mode_triggered(pilots: Array, reason: String)
 signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: String)
+signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
+signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
 signal race_finished(final_positions: Array)
 
 # Race states
@@ -324,6 +326,14 @@ func process_pilot_turn(pilot: PilotState):
 
 	# Calculate base movement
 	var base_movement = MoveProc.calculate_base_movement(sector, roll_result)
+
+	# Apply overflow penalty from previous failure table (if any)
+	if pilot.penalty_next_turn > 0:
+		var penalty_applied = min(pilot.penalty_next_turn, base_movement)
+		base_movement = max(0, base_movement - pilot.penalty_next_turn)
+		# Log the penalty application
+		overflow_penalty_applied.emit(pilot, penalty_applied)
+		pilot.penalty_next_turn = 0  # Clear the penalty after applying
 
 	# Handle overtaking
 	var final_movement = handle_overtaking(pilot, base_movement, sector)
@@ -663,6 +673,7 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	var failure_result = FailureTableRes.resolve_failure(pilot, sector)
 	var failure_roll = failure_result.roll_result
 	var consequence = failure_result.consequence_text
+	var penalty_gaps = failure_result.penalty_gaps
 
 	# Emit failure table result event
 	failure_table_triggered.emit(pilot, sector, consequence)
@@ -671,9 +682,19 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	event.roll_results = [failure_roll]
 	event.metadata["consequence"] = consequence
 	event.metadata["initial_roll"] = initial_roll
+	event.metadata["penalty_gaps"] = penalty_gaps
 
-	# Calculate movement (base red_movement from sector)
-	var base_movement = sector.red_movement
+	# Calculate movement (base red_movement minus penalty, minimum 0)
+	var base_movement = max(0, sector.red_movement - penalty_gaps)
+
+	# Calculate overflow penalty (penalty that exceeds available movement)
+	var overflow_penalty = max(0, penalty_gaps - sector.red_movement)
+	if overflow_penalty > 0:
+		pilot.penalty_next_turn = overflow_penalty
+		event.metadata["overflow_penalty"] = overflow_penalty
+		# Log that penalty is being deferred to next turn
+		overflow_penalty_deferred.emit(pilot, overflow_penalty)
+
 	event.movement_outcomes = [base_movement]
 
 	# Re-emit event to update UI with failure table results
