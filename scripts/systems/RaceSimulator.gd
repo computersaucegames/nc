@@ -374,7 +374,11 @@ func make_pilot_roll(pilot: PilotState, sector: Sector) -> Dice.DiceResult:
 		"green": sector.green_threshold,
 		"purple": sector.purple_threshold
 	}
-	
+
+	# DEBUG: Log the gates and sector info
+	print("DEBUG make_pilot_roll: %s rolling on %s" % [pilot.name, sector.sector_name])
+	print("  Gates: grey=%d, green=%d, purple=%d" % [gates["grey"], gates["green"], gates["purple"]])
+
 	# Convert enum to string for the dice display/logging
 	var check_name = sector.get_check_type_string()  # "twitch", "craft", etc.
 	
