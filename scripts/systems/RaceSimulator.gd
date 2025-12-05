@@ -92,9 +92,15 @@ func start_race(circuit: Circuit, pilot_list: Array):
 	# Use StartHandler to setup grid
 	StartHandler.form_starting_grid(pilots, circuit)
 
-	# Set race start status for all pilots
+	# Set race start status for all pilots and clear other statuses
 	for pilot in pilots:
 		pilot.is_race_start = true
+		pilot.is_clear_air = false
+		pilot.is_attacking = false
+		pilot.is_defending = false
+		pilot.is_wheel_to_wheel = false
+		pilot.is_in_train = false
+		pilot.is_dueling = false
 
 	# Initialize badge states for all pilots
 	BadgeSystem.reset_all_badge_states(pilots)
