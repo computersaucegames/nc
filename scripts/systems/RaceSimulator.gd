@@ -92,6 +92,10 @@ func start_race(circuit: Circuit, pilot_list: Array):
 	# Use StartHandler to setup grid
 	StartHandler.form_starting_grid(pilots, circuit)
 
+	# Set race start status for all pilots
+	for pilot in pilots:
+		pilot.is_race_start = true
+
 	# Initialize badge states for all pilots
 	BadgeSystem.reset_all_badge_states(pilots)
 
@@ -227,6 +231,10 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 
 	# Update all positions after race start
 	MoveProc.update_all_positions(pilots)
+
+	# Clear race start status for all pilots (race has now begun)
+	for pilot in pilots:
+		pilot.is_race_start = false
 
 	# Emit race start rolls for any UI that wants to display them
 	var signal_data = []
