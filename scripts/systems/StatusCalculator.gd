@@ -16,7 +16,7 @@ static func calculate_all_statuses(pilots: Array) -> void:
 	# Calculate basic statuses for each pilot
 	for i in range(pilots.size()):
 		var pilot = pilots[i]
-		if pilot.finished:
+		if pilot.finished or pilot.did_not_finish:
 			continue
 
 		_calculate_pilot_status(pilot, pilots)
@@ -48,7 +48,7 @@ static func _calculate_pilot_status(pilot, all_pilots: Array) -> void:
 	var has_close_fin = false
 	
 	for other in all_pilots:
-		if other == pilot or other.finished:
+		if other == pilot or other.finished or other.did_not_finish:
 			continue
 		
 		var gap_diff = calculate_gap_between(pilot, other)
@@ -79,7 +79,7 @@ static func _limit_w2w_pairs(pilots: Array) -> void:
 	# Group pilots by total_distance
 	var distance_groups = {}
 	for pilot in pilots:
-		if pilot.finished or not pilot.is_wheel_to_wheel:
+		if pilot.finished or pilot.did_not_finish or not pilot.is_wheel_to_wheel:
 			continue
 
 		var dist = pilot.total_distance
@@ -139,7 +139,7 @@ static func _get_connected_group(pilot) -> Array:
 # Detect duels (pilots who have been W2W for 2+ consecutive rounds)
 static func _detect_duels(pilots: Array) -> void:
 	for pilot in pilots:
-		if pilot.finished:
+		if pilot.finished or pilot.did_not_finish:
 			continue
 
 		# Check if pilot is currently W2W
@@ -201,9 +201,9 @@ static func get_status_summary(pilots: Array) -> Dictionary:
 	}
 	
 	for pilot in pilots:
-		if pilot.finished:
+		if pilot.finished or pilot.did_not_finish:
 			continue
-			
+
 		if pilot.is_clear_air:
 			summary["clear_air"].append(pilot.name)
 		if pilot.is_attacking:

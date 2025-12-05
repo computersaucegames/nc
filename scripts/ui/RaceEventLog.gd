@@ -180,6 +180,12 @@ func log_negative_badge_applied(pilot_name: String, badge_name: String, badge_de
 		pilot_name, badge_name, badge_description
 	])
 
+func log_pilot_crashed(pilot_name: String, sector_name: String, reason: String):
+	output_log.append_text("[b][color=red]💥 CRASH! [b]%s[/b] has CRASHED at %s![/color][/b]\n" % [
+		pilot_name, sector_name
+	])
+	output_log.append_text("[b][color=orange]    %s is OUT of the race - DNF[/color][/b]\n\n" % pilot_name)
+
 func log_overflow_penalty_deferred(pilot_name: String, penalty_gaps: int):
 	output_log.append_text("[b][color=orange]⚠️ PENALTY OVERFLOW! [b]%s[/b] will lose %d Gap on next turn[/color][/b]\n\n" % [
 		pilot_name, penalty_gaps

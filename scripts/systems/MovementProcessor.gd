@@ -155,9 +155,9 @@ static func update_all_positions(pilots: Array) -> void:
 		if not pilots[i].finished:
 			pilots[i].position = i + 1
 
-# Check if a pilot can continue racing
+# Check if a pilot can continue racing (not finished and not DNF)
 static func can_pilot_race(pilot: PilotState) -> bool:
-	return not pilot.finished
+	return not pilot.finished and not pilot.did_not_finish
 
 # Get pilots in finishing order
 static func get_finish_order(pilots: Array) -> Array:
