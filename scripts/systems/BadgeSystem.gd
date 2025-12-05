@@ -14,7 +14,13 @@ static func get_active_modifiers(pilot_state, context: Dictionary) -> Array:
 	if not pilot_state.pilot_data:
 		return modifiers
 
-	var equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
+	var equipped_badges = []
+	if pilot_state.pilot_data is Pilot:
+		equipped_badges = pilot_state.pilot_data.equipped_badges
+	elif pilot_state.pilot_data is Dictionary:
+		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+
 	if equipped_badges.is_empty():
 		return modifiers
 
@@ -41,7 +47,13 @@ static func update_pilot_badge_states(pilot_state) -> void:
 	if not pilot_state.pilot_data:
 		return
 
-	var equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
+	var equipped_badges = []
+	if pilot_state.pilot_data is Pilot:
+		equipped_badges = pilot_state.pilot_data.equipped_badges
+	elif pilot_state.pilot_data is Dictionary:
+		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+
 	if equipped_badges.is_empty():
 		return
 
@@ -67,7 +79,13 @@ static func get_active_badges_debug(pilot_state, context: Dictionary) -> String:
 	if not pilot_state.pilot_data:
 		return debug_text + "  No pilot data\n"
 
-	var equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
+	var equipped_badges = []
+	if pilot_state.pilot_data is Pilot:
+		equipped_badges = pilot_state.pilot_data.equipped_badges
+	elif pilot_state.pilot_data is Dictionary:
+		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+
 	if equipped_badges.is_empty():
 		return debug_text + "  No equipped badges\n"
 
