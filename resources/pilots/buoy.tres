@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Pilot" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/badge.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/pilot.gd" id="2"]
+[ext_resource type="Resource" path="res://resources/badges/intimidator.tres" id="3"]
+
+[resource]
+script = ExtResource("2")
+pilot_name = "Buoy"
+pilot_bio = "A fearless racer known for aggressive overtaking. Once he locks onto your tail, he's relentless - earning him the nickname 'The Intimidator'."
+TWITCH = 7
+CRAFT = 5
+SYNC = 6
+EDGE = 8
+equipped_badges = Array[ExtResource("1")]([ExtResource("3")])

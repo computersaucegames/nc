@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Pilot" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/badge.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/pilot.gd" id="2"]
+
+[resource]
+script = ExtResource("2")
+pilot_name = "Stubble"
+pilot_bio = "A technical perfectionist who thrives on precision. Every corner is calculated, every braking point optimized. Slow to anger but devastating when pushed."
+TWITCH = 5
+CRAFT = 8
+SYNC = 6
+EDGE = 7
+equipped_badges = Array[ExtResource("1")]([])

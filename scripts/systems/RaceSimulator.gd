@@ -69,7 +69,23 @@ func start_race(circuit: Circuit, pilot_list: Array):
 	for i in range(pilot_list.size()):
 		var pilot_state = PilotState.new()
 		pilot_state.pilot_id = i  # Set the pilot ID for UI tracking
-		pilot_state.setup_from_dict(pilot_list[i], i + 1)
+
+		# Handle different pilot data formats
+		var pilot_data = pilot_list[i]
+		if pilot_data is Dictionary and pilot_data.has("pilot"):
+			# New format: {"pilot": Pilot resource, "headshot": "path"}
+			var pilot_resource = pilot_data["pilot"]
+			var headshot = pilot_data.get("headshot", "")
+			pilot_state.setup_from_pilot_resource(pilot_resource, i + 1, headshot)
+		elif pilot_data is Pilot:
+			# Direct Pilot resource (no headshot)
+			pilot_state.setup_from_pilot_resource(pilot_data, i + 1, "")
+		elif pilot_data is Dictionary:
+			# Legacy format: {"name": "...", "twitch": X, ...}
+			pilot_state.setup_from_dict(pilot_data, i + 1)
+		else:
+			push_error("Invalid pilot data type: %s" % typeof(pilot_data))
+
 		pilots.append(pilot_state)
 
 	# Use StartHandler to setup grid
