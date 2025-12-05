@@ -91,7 +91,21 @@ func get_position_string() -> String:
 		position, current_lap, current_sector + 1, gap_in_sector, total_distance
 	]
 
-# Initialize from dictionary (for easy setup)
+# Initialize from Pilot resource
+func setup_from_pilot_resource(pilot_resource: Pilot, start_position: int = 1, headshot_path: String = "") -> void:
+	pilot_data = pilot_resource
+	name = pilot_resource.pilot_name
+	position = start_position
+	grid_position = start_position
+	headshot = headshot_path
+
+	# Copy stats from pilot resource
+	twitch = pilot_resource.TWITCH
+	craft = pilot_resource.CRAFT
+	sync = pilot_resource.SYNC
+	edge = pilot_resource.EDGE
+
+# Initialize from dictionary (for easy setup - legacy support)
 func setup_from_dict(data: Dictionary, start_position: int = 1) -> void:
 	name = data.get("name", "Pilot %d" % start_position)
 	position = start_position

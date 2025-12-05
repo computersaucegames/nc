@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Pilot" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/badge.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/pilot.gd" id="2"]
+[ext_resource type="Resource" path="res://resources/badges/clear_air_specialist.tres" id="3"]
+
+[resource]
+script = ExtResource("2")
+pilot_name = "Redman"
+pilot_bio = "A solo runner who thrives in clean air. His pace is unmatched when he can focus on the track ahead without distractions. Prefers to lead or hunt from behind."
+TWITCH = 8
+CRAFT = 6
+SYNC = 7
+EDGE = 5
+equipped_badges = Array[ExtResource("1")]([ExtResource("3")])

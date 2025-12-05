@@ -92,14 +92,15 @@ func _on_start_pressed():
 	# CHANGED: Use race_log method instead of direct output_log calls
 	race_log.log_race_start(test_circuit.circuit_name, test_circuit.total_laps)
 
+	# Load pilot resources (new format with badges!)
 	var pilots = [
-		{"name": "Buoy", "twitch": 7, "craft": 5, "sync": 6, "edge": 8, "headshot": "res://resources/art/buoy.png"},
-		{"name": "Cowboy", "twitch": 6, "craft": 7, "sync": 5, "edge": 6, "headshot": "res://resources/art/cowboy.png"},
-		{"name": "Redman", "twitch": 8, "craft": 6, "sync": 7, "edge": 5, "headshot": "res://resources/art/redman.png"},
-		{"name": "Stubble", "twitch": 5, "craft": 8, "sync": 6, "edge": 7, "headshot": "res://resources/art/stubble.png"},
-		{"name": "Poshpaul", "twitch": 6, "craft": 6, "sync": 8, "edge": 6, "headshot": "res://resources/art/poshpaul.png"}
+		{"pilot": load("res://resources/pilots/buoy.tres"), "headshot": "res://resources/art/buoy.png"},
+		{"pilot": load("res://resources/pilots/cowboy.tres"), "headshot": "res://resources/art/cowboy.png"},
+		{"pilot": load("res://resources/pilots/redman.tres"), "headshot": "res://resources/art/redman.png"},
+		{"pilot": load("res://resources/pilots/stubble.tres"), "headshot": "res://resources/art/stubble.png"},
+		{"pilot": load("res://resources/pilots/poshpaul.tres"), "headshot": "res://resources/art/poshpaul.png"}
 	]
-	
+
 	# CHANGED: Use race_controls to enable pause button
 	race_controls.set_pause_enabled(true)
 	race_sim.start_race(test_circuit, pilots)
