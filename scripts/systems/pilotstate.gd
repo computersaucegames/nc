@@ -19,6 +19,7 @@ var finished: bool = false  # Track if pilot has finished the race
 var finish_round: int = 0  # Round number when pilot finished
 
 # Status flags
+var is_race_start: bool = false  # Race start status (overrides other statuses)
 var is_clear_air: bool = true
 var is_attacking: bool = false
 var is_defending: bool = false
@@ -67,6 +68,10 @@ func get_stat(check_type: Sector.CheckType) -> int:
 
 # Get current status as a string for display
 func get_status_string() -> String:
+	# Race start status overrides all others
+	if is_race_start:
+		return "Race Start"
+
 	var statuses = []
 	if is_clear_air:
 		statuses.append("Clear Air")
@@ -119,6 +124,7 @@ func setup_from_dict(data: Dictionary, start_position: int = 1) -> void:
 
 # Reset status flags (called when recalculating)
 func clear_statuses() -> void:
+	is_race_start = false
 	is_clear_air = true
 	is_attacking = false
 	is_defending = false

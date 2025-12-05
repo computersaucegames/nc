@@ -33,6 +33,7 @@ static func calculate_all_statuses(pilots: Array) -> void:
 # Clear all status flags for pilots
 static func _clear_all_statuses(pilots: Array) -> void:
 	for pilot in pilots:
+		pilot.is_race_start = false
 		pilot.is_clear_air = true
 		pilot.is_attacking = false
 		pilot.is_defending = false
