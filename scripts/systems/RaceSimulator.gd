@@ -209,6 +209,15 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 	var sorted_pilots_with_rolls = event.metadata["sorted_pilots"]
 
+	# Emit race start rolls first, before movement results
+	var signal_data = []
+	for entry in sorted_pilots_with_rolls:
+		signal_data.append({
+			"pilot": entry.pilot,
+			"roll": entry.roll
+		})
+	race_start_rolls.emit(signal_data)
+
 	# Process each pilot in twitch order
 	for entry in sorted_pilots_with_rolls:
 		var pilot = entry.pilot
@@ -235,15 +244,6 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 	# Clear race start status for all pilots (race has now begun)
 	for pilot in pilots:
 		pilot.is_race_start = false
-
-	# Emit race start rolls for any UI that wants to display them
-	var signal_data = []
-	for entry in sorted_pilots_with_rolls:
-		signal_data.append({
-			"pilot": entry.pilot,
-			"roll": entry.roll
-		})
-	race_start_rolls.emit(signal_data)
 
 # Pause the race
 func pause_race():
