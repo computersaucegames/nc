@@ -765,11 +765,16 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	# Emit failure table result event
 	failure_table_triggered.emit(pilot, sector, consequence)
 
-	# Apply negative badge if specified
+	# Apply negative badge based on failure roll tier
+	# PURPLE: no badge, GREEN: -1 badge, GREY: -2 badge, RED: will be crash
 	if badge_id != "":
-		var badge_applied = FailureTableRes.apply_badge_to_pilot(pilot, badge_id)
+		var badge_applied = FailureTableRes.apply_badge_based_on_tier(pilot, badge_id, failure_roll.tier)
 		if badge_applied:
-			var badge = FailureTableRes.load_badge(badge_id)
+			# Get the actual badge that was applied (might be base or _severe version)
+			var applied_badge_id = badge_id
+			if failure_roll.tier == Dice.Tier.GREY or failure_roll.tier == Dice.Tier.RED:
+				applied_badge_id = badge_id + "_severe"
+			var badge = FailureTableRes.load_badge(applied_badge_id)
 			if badge:
 				negative_badge_applied.emit(pilot, badge)
 
