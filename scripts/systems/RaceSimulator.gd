@@ -30,6 +30,7 @@ signal focus_mode_triggered(pilots: Array, reason: String)
 signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: String)
 signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
 signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
+signal badge_activated(pilot: PilotState, badge_name: String, effect_description: String)
 signal race_finished(final_positions: Array)
 
 # Race states
@@ -154,11 +155,17 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 		pilot_rolling.emit(pilot, start_sector)
 
 		# Get badge modifiers for race start
-		var modifiers = BadgeSystem.get_active_modifiers(pilot, {
+		var context = {
 			"roll_type": "race_start",
 			"is_race_start": true,
 			"sector": start_sector
-		})
+		}
+		var modifiers = BadgeSystem.get_active_modifiers(pilot, context)
+
+		# Emit badge activation events
+		var active_badges = BadgeSystem.get_active_badges_info(pilot, context)
+		for badge_info in active_badges:
+			badge_activated.emit(pilot, badge_info["name"], badge_info["effect"])
 
 		var roll = Dice.roll_d20(pilot.twitch, "twitch", modifiers, gates, {
 			"context": "race_start",
@@ -407,12 +414,18 @@ func make_pilot_roll(pilot: PilotState, sector: Sector) -> Dice.DiceResult:
 		pilot.has_poor_start = false
 
 	# Add modifiers from badges
-	var badge_mods = BadgeSystem.get_active_modifiers(pilot, {
+	var context = {
 		"roll_type": "movement",
 		"sector": sector,
 		"round": current_round
-	})
+	}
+	var badge_mods = BadgeSystem.get_active_modifiers(pilot, context)
 	modifiers.append_array(badge_mods)
+
+	# Emit badge activation events
+	var active_badges = BadgeSystem.get_active_badges_info(pilot, context)
+	for badge_info in active_badges:
+		badge_activated.emit(pilot, badge_info["name"], badge_info["effect"])
 	
 	var gates = {
 		"grey": sector.grey_threshold,

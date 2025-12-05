@@ -35,6 +35,56 @@ static func get_active_modifiers(pilot_state, context: Dictionary) -> Array:
 
 	return modifiers
 
+## Get active badge info for logging/display
+## Returns array of {name: String, description: String, modifier_type: String}
+static func get_active_badges_info(pilot_state, context: Dictionary) -> Array:
+	var active_badges = []
+
+	# Get the pilot's equipped badges
+	if not pilot_state.pilot_data:
+		return active_badges
+
+	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
+	var equipped_badges = []
+	if pilot_state.pilot_data is Pilot:
+		equipped_badges = pilot_state.pilot_data.equipped_badges
+	elif pilot_state.pilot_data is Dictionary:
+		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
+
+	if equipped_badges.is_empty():
+		return active_badges
+
+	# Check each badge to see if it should activate
+	for badge in equipped_badges:
+		if badge == null:
+			continue
+
+		if badge.should_activate(pilot_state, context):
+			var modifier_desc = _get_modifier_description(badge.modifier_type, badge.modifier_value)
+			active_badges.append({
+				"name": badge.badge_name,
+				"description": badge.description,
+				"effect": modifier_desc
+			})
+
+	return active_badges
+
+## Helper to describe modifier type for display
+static func _get_modifier_description(mod_type: Dice.ModType, value: int) -> String:
+	match mod_type:
+		Dice.ModType.FLAT_BONUS:
+			return "+%d bonus" % value
+		Dice.ModType.ADVANTAGE:
+			return "Advantage (roll twice, take best)"
+		Dice.ModType.DISADVANTAGE:
+			return "Disadvantage (roll twice, take worst)"
+		Dice.ModType.REROLL_ONES:
+			return "Reroll 1s"
+		Dice.ModType.TIER_SHIFT:
+			return "Shift result %d tier" % value
+		_:
+			return "Special effect"
+
 ## Update badge states for all pilots after status calculation
 ## Call this each round after StatusCalculator runs
 static func update_all_badge_states(pilots: Array) -> void:

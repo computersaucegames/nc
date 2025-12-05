@@ -77,6 +77,13 @@ func setup_pilots(pilot_data: Array):
 			headshot.texture = load(data.headshot)
 		hbox.add_child(headshot)
 
+		# Add badge indicator container (vertical box for multiple badges)
+		var badge_container = VBoxContainer.new()
+		badge_container.custom_minimum_size = Vector2(30, 50)
+		badge_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		badge_container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hbox.add_child(badge_container)
+
 		# Add label
 		var label = RichTextLabel.new()
 		label.bbcode_enabled = true
@@ -86,7 +93,13 @@ func setup_pilots(pilot_data: Array):
 		hbox.add_child(label)
 
 		add_child(hbox)
-		pilot_labels[data.name] = {"container": hbox, "label": label, "sprite": sprite, "headshot": headshot}
+		pilot_labels[data.name] = {
+			"container": hbox,
+			"label": label,
+			"sprite": sprite,
+			"headshot": headshot,
+			"badge_container": badge_container
+		}
 
 # Set the circuit reference for sector names
 func set_circuit(race_circuit: Circuit):
@@ -158,6 +171,9 @@ func update_pilot_display(pilot, all_pilots: Array):
 		elif pilot.is_defending:
 			label.append_text(" [color=cyan]←[/color]")
 
+	# Update badge indicators
+	update_badge_indicators(pilot)
+
 # Calculate gap to the pilot in front (same lap only)
 # Returns the gap in distance units, or null if not applicable
 func _calculate_gap_to_front(pilot, all_pilots: Array) -> Variant:
@@ -179,6 +195,60 @@ func _calculate_gap_to_front(pilot, all_pilots: Array) -> Variant:
 
 	# Couldn't find pilot in front
 	return null
+
+# Update badge indicators for a pilot
+func update_badge_indicators(pilot):
+	if not pilot.name in pilot_labels:
+		return
+
+	var badge_container = pilot_labels[pilot.name]["badge_container"]
+
+	# Clear existing badge indicators
+	for child in badge_container.get_children():
+		child.queue_free()
+
+	# Get all equipped badges from pilot resource
+	if not pilot.pilot_data or not pilot.pilot_data is Pilot:
+		return
+
+	var equipped_badges = pilot.pilot_data.equipped_badges
+	if equipped_badges.is_empty():
+		return
+
+	# Check which badges are currently active in a movement context
+	var context = {
+		"roll_type": "movement",
+		"sector": null  # We don't have sector context here, but status-based badges will still work
+	}
+	var active_badge_names = {}
+	var active_badges_info = BadgeSystem.get_active_badges_info(pilot, context)
+	for badge_info in active_badges_info:
+		active_badge_names[badge_info["name"]] = badge_info
+
+	# Create indicators for each equipped badge
+	for badge in equipped_badges:
+		if badge == null:
+			continue
+
+		var is_active = badge.badge_name in active_badge_names
+
+		# Create badge icon (star emoji with color based on active state)
+		var badge_label = Label.new()
+		badge_label.text = "⭐" if is_active else "☆"
+		badge_label.add_theme_font_size_override("font_size", 16)
+		if is_active:
+			badge_label.add_theme_color_override("font_color", Color.MAGENTA)
+		else:
+			badge_label.add_theme_color_override("font_color", Color.GRAY)
+
+		# Add tooltip with badge info
+		var tooltip_text = "[b]%s[/b]\n%s" % [badge.badge_name, badge.description]
+		if is_active:
+			var effect = active_badge_names[badge.badge_name]["effect"]
+			tooltip_text += "\n[color=green]ACTIVE: %s[/color]" % effect
+		badge_label.tooltip_text = tooltip_text
+
+		badge_container.add_child(badge_label)
 
 # Get color based on position
 func get_position_color(position: int) -> String:

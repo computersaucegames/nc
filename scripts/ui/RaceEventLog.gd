@@ -93,6 +93,11 @@ func log_pilot_rolled(pilot_name: String, result: Dice.DiceResult):
 		result.final_total, color, result.tier_name
 	])
 
+func log_badge_activated(pilot_name: String, badge_name: String, effect_description: String):
+	output_log.append_text("    [color=magenta]⭐ BADGE: %s - %s[/color]\n" % [
+		badge_name, effect_description
+	])
+
 func log_overtake_detected(overtaking_name: String, overtaken_name: String):
 	output_log.append_text("[b][color=yellow]⚡ OVERTAKE ATTEMPT! %s trying to pass %s![/color][/b]\n" % [
 		overtaking_name, overtaken_name

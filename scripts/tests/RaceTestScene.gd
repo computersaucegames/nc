@@ -46,6 +46,7 @@ func setup_race_simulator():
 	race_sim.round_started.connect(_on_round_started)
 	race_sim.pilot_rolling.connect(_on_pilot_rolling)
 	race_sim.pilot_rolled.connect(_on_pilot_rolled)
+	race_sim.badge_activated.connect(_on_badge_activated)
 	race_sim.pilot_moved.connect(_on_pilot_moved)
 	race_sim.pilot_movement_details.connect(_on_pilot_movement_details)
 	race_sim.overtake_detected.connect(_on_overtake_detected)
@@ -192,6 +193,9 @@ func _on_pilot_rolling(pilot, sector):
 
 func _on_pilot_rolled(pilot, result: Dice.DiceResult):
 	race_log.log_pilot_rolled(pilot.name, result)
+
+func _on_badge_activated(pilot: PilotState, badge_name: String, effect_description: String):
+	race_log.log_badge_activated(pilot.name, badge_name, effect_description)
 
 func _on_pilot_moved(pilot, movement: int):
 	update_pilot_displays()
