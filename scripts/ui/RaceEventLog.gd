@@ -49,6 +49,7 @@ func log_race_start(circuit_name: String, total_laps: int):
 	output_log.clear()
 	output_log.append_text("[b][color=green]RACE STARTING![/color][/b]\n")
 	output_log.append_text("Circuit: %s - %d Laps\n\n" % [circuit_name, total_laps])
+	output_log.append_text("[b]Grid forms up... LIGHTS OUT AND AWAY WE GO![/b]\n")
 
 func log_start_rolls(start_results: Array):
 	output_log.append_text("\n[b][color=cyan]🚦 RACE START - LAUNCH ROLLS![/color][/b]\n")
@@ -63,7 +64,7 @@ func log_start_rolls(start_results: Array):
 			pilot.name, roll.final_total, color, roll.tier_name, effect
 		])
 
-	output_log.append_text("[b]Grid forms up... LIGHTS OUT AND AWAY WE GO![/b]\n")
+	output_log.append_text("\n")
 
 func log_round_started(round_num: int):
 	output_log.append_text("\n[b]Round %d[/b]\n" % round_num)
