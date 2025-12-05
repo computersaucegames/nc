@@ -207,12 +207,13 @@ func update_badge_indicators(pilot):
 	for child in badge_container.get_children():
 		child.queue_free()
 
-	# Get all equipped badges from pilot resource
-	if not pilot.pilot_data or not pilot.pilot_data is Pilot:
-		return
+	# Get all badges (equipped + temporary)
+	var all_badges = []
+	if pilot.pilot_data and pilot.pilot_data is Pilot:
+		all_badges.append_array(pilot.pilot_data.equipped_badges)
+	all_badges.append_array(pilot.temporary_badges)
 
-	var equipped_badges = pilot.pilot_data.equipped_badges
-	if equipped_badges.is_empty():
+	if all_badges.is_empty():
 		return
 
 	# Check which badges are currently active in a movement context
@@ -225,27 +226,38 @@ func update_badge_indicators(pilot):
 	for badge_info in active_badges_info:
 		active_badge_names[badge_info["name"]] = badge_info
 
-	# Create indicators for each equipped badge
-	for badge in equipped_badges:
+	# Create indicators for each badge
+	for badge in all_badges:
 		if badge == null:
 			continue
 
 		var is_active = badge.badge_name in active_badge_names
+		var is_temporary = badge in pilot.temporary_badges
 
-		# Create badge icon (star emoji with color based on active state)
+		# Create badge icon
 		var badge_label = Label.new()
-		badge_label.text = "⭐" if is_active else "☆"
-		badge_label.add_theme_font_size_override("font_size", 16)
-		if is_active:
-			badge_label.add_theme_color_override("font_color", Color.MAGENTA)
+
+		if is_temporary:
+			# Negative badges use red X icon
+			badge_label.text = "❌"
+			badge_label.add_theme_font_size_override("font_size", 16)
+			badge_label.add_theme_color_override("font_color", Color.RED if is_active else Color.DARK_RED)
 		else:
-			badge_label.add_theme_color_override("font_color", Color.GRAY)
+			# Positive badges use star icon
+			badge_label.text = "⭐" if is_active else "☆"
+			badge_label.add_theme_font_size_override("font_size", 16)
+			if is_active:
+				badge_label.add_theme_color_override("font_color", Color.MAGENTA)
+			else:
+				badge_label.add_theme_color_override("font_color", Color.GRAY)
 
 		# Add tooltip with badge info
-		var tooltip_text = "[b]%s[/b]\n%s" % [badge.badge_name, badge.description]
+		var badge_type_text = " [TEMPORARY]" if is_temporary else ""
+		var tooltip_text = "[b]%s%s[/b]\n%s" % [badge.badge_name, badge_type_text, badge.description]
 		if is_active:
 			var effect = active_badge_names[badge.badge_name]["effect"]
-			tooltip_text += "\n[color=green]ACTIVE: %s[/color]" % effect
+			var color = "red" if is_temporary else "green"
+			tooltip_text += "\n[color=%s]ACTIVE: %s[/color]" % [color, effect]
 		badge_label.tooltip_text = tooltip_text
 
 		badge_container.add_child(badge_label)

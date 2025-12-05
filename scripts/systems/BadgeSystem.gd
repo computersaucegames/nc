@@ -5,27 +5,34 @@ extends RefCounted
 ## Central system for evaluating badge conditions and applying badge effects
 ## Used by RaceSimulator, OvertakeResolver, and other game systems
 
-## Get all active modifiers from a pilot's equipped badges
+## Helper to get all badges (equipped + temporary) for a pilot
+static func _get_all_badges(pilot_state) -> Array:
+	var all_badges = []
+
+	# Get equipped badges from pilot resource
+	if pilot_state.pilot_data:
+		if pilot_state.pilot_data is Pilot:
+			all_badges.append_array(pilot_state.pilot_data.equipped_badges)
+		elif pilot_state.pilot_data is Dictionary:
+			all_badges.append_array(pilot_state.pilot_data.get("equipped_badges", []))
+
+	# Add temporary badges (negative badges earned during race)
+	all_badges.append_array(pilot_state.temporary_badges)
+
+	return all_badges
+
+## Get all active modifiers from a pilot's equipped badges and temporary badges
 ## Returns an array of RollModifiers that should be applied to this roll
 static func get_active_modifiers(pilot_state, context: Dictionary) -> Array:
 	var modifiers = []
 
-	# Get the pilot's equipped badges
-	if not pilot_state.pilot_data:
-		return modifiers
-
-	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
-	var equipped_badges = []
-	if pilot_state.pilot_data is Pilot:
-		equipped_badges = pilot_state.pilot_data.equipped_badges
-	elif pilot_state.pilot_data is Dictionary:
-		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
-
-	if equipped_badges.is_empty():
+	# Get all badges (equipped + temporary)
+	var all_badges = _get_all_badges(pilot_state)
+	if all_badges.is_empty():
 		return modifiers
 
 	# Check each badge to see if it should activate
-	for badge in equipped_badges:
+	for badge in all_badges:
 		if badge == null:
 			continue
 
@@ -40,22 +47,13 @@ static func get_active_modifiers(pilot_state, context: Dictionary) -> Array:
 static func get_active_badges_info(pilot_state, context: Dictionary) -> Array:
 	var active_badges = []
 
-	# Get the pilot's equipped badges
-	if not pilot_state.pilot_data:
-		return active_badges
-
-	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
-	var equipped_badges = []
-	if pilot_state.pilot_data is Pilot:
-		equipped_badges = pilot_state.pilot_data.equipped_badges
-	elif pilot_state.pilot_data is Dictionary:
-		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
-
-	if equipped_badges.is_empty():
+	# Get all badges (equipped + temporary)
+	var all_badges = _get_all_badges(pilot_state)
+	if all_badges.is_empty():
 		return active_badges
 
 	# Check each badge to see if it should activate
-	for badge in equipped_badges:
+	for badge in all_badges:
 		if badge == null:
 			continue
 
@@ -93,22 +91,13 @@ static func update_all_badge_states(pilots: Array) -> void:
 
 ## Update badge states for a single pilot
 static func update_pilot_badge_states(pilot_state) -> void:
-	# Get the pilot's equipped badges
-	if not pilot_state.pilot_data:
-		return
-
-	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
-	var equipped_badges = []
-	if pilot_state.pilot_data is Pilot:
-		equipped_badges = pilot_state.pilot_data.equipped_badges
-	elif pilot_state.pilot_data is Dictionary:
-		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
-
-	if equipped_badges.is_empty():
+	# Get all badges (equipped + temporary)
+	var all_badges = _get_all_badges(pilot_state)
+	if all_badges.is_empty():
 		return
 
 	# Update each badge's state tracking
-	for badge in equipped_badges:
+	for badge in all_badges:
 		if badge == null:
 			continue
 		badge.update_state(pilot_state)
@@ -126,27 +115,21 @@ static func reset_all_badge_states(pilots: Array) -> void:
 static func get_active_badges_debug(pilot_state, context: Dictionary) -> String:
 	var debug_text = "Active badges for %s:\n" % pilot_state.name
 
-	if not pilot_state.pilot_data:
-		return debug_text + "  No pilot data\n"
+	# Get all badges (equipped + temporary)
+	var all_badges = _get_all_badges(pilot_state)
+	if all_badges.is_empty():
+		return debug_text + "  No badges\n"
 
-	# Access equipped_badges as a property (Pilot resource) or dict key (legacy)
-	var equipped_badges = []
-	if pilot_state.pilot_data is Pilot:
-		equipped_badges = pilot_state.pilot_data.equipped_badges
-	elif pilot_state.pilot_data is Dictionary:
-		equipped_badges = pilot_state.pilot_data.get("equipped_badges", [])
-
-	if equipped_badges.is_empty():
-		return debug_text + "  No equipped badges\n"
-
-	for badge in equipped_badges:
+	for badge in all_badges:
 		if badge == null:
 			continue
 
 		var is_active = badge.should_activate(pilot_state, context)
-		debug_text += "  [%s] %s: %s\n" % [
+		var badge_type = " (TEMP)" if badge in pilot_state.temporary_badges else ""
+		debug_text += "  [%s] %s%s: %s\n" % [
 			"ACTIVE" if is_active else "INACTIVE",
 			badge.badge_name,
+			badge_type,
 			badge.description
 		]
 

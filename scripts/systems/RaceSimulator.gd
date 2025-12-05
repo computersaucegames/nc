@@ -31,6 +31,7 @@ signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: S
 signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
 signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
 signal badge_activated(pilot: PilotState, badge_name: String, effect_description: String)
+signal negative_badge_applied(pilot: PilotState, badge: Badge)
 signal race_finished(final_positions: Array)
 
 # Race states
@@ -759,15 +760,26 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	var failure_roll = failure_result.roll_result
 	var consequence = failure_result.consequence_text
 	var penalty_gaps = failure_result.penalty_gaps
+	var badge_id = failure_result.badge_id
 
 	# Emit failure table result event
 	failure_table_triggered.emit(pilot, sector, consequence)
+
+	# Apply negative badge if specified
+	if badge_id != "":
+		var badge_applied = FailureTableRes.apply_badge_to_pilot(pilot, badge_id)
+		if badge_applied:
+			var badge = FailureTableRes.load_badge(badge_id)
+			if badge:
+				negative_badge_applied.emit(pilot, badge)
 
 	# Store failure data in event
 	event.roll_results = [failure_roll]
 	event.metadata["consequence"] = consequence
 	event.metadata["initial_roll"] = initial_roll
 	event.metadata["penalty_gaps"] = penalty_gaps
+	if badge_id != "":
+		event.metadata["badge_id"] = badge_id
 
 	# Calculate movement (base red_movement minus penalty, minimum 0)
 	var base_movement = max(0, sector.red_movement - penalty_gaps)

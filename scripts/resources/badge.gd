@@ -14,7 +14,8 @@ extends Resource
 enum Permanence {
 	PERMANENT,        # Never lost
 	SEASONAL,         # Lasts entire season
-	WEAR_AND_TEAR     # Can be lost during races, cleared by pit stops
+	WEAR_AND_TEAR,    # Can be lost during races, cleared by pit stops
+	RACE_TEMPORARY    # Earned during race, cleared at race end
 }
 @export var permanence: Permanence = Permanence.PERMANENT
 
@@ -88,6 +89,24 @@ func should_activate(pilot_state, context: Dictionary) -> bool:
 		return false
 	if trigger_on_in_train and not pilot_state.is_in_train:
 		return false
+
+	# Check sector type conditions
+	var sector = context.get("sector", null)
+	if sector:
+		var has_sector_trigger = trigger_on_twitch_sectors or trigger_on_craft_sectors or trigger_on_sync_sectors or trigger_on_edge_sectors
+		if has_sector_trigger:
+			var sector_matches = false
+			match sector.check_type:
+				Sector.CheckType.TWITCH:
+					sector_matches = trigger_on_twitch_sectors
+				Sector.CheckType.CRAFT:
+					sector_matches = trigger_on_craft_sectors
+				Sector.CheckType.SYNC:
+					sector_matches = trigger_on_sync_sectors
+				Sector.CheckType.EDGE:
+					sector_matches = trigger_on_edge_sectors
+			if not sector_matches:
+				return false
 
 	# Check consecutive rounds requirement
 	if requires_consecutive_rounds > 0 and state_property != "":

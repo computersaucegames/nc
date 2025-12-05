@@ -17,7 +17,7 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Understeer wide - lose 1 Gap", "Overheat tires - lose 2 Gap", "Minor slide - no penalty"])
+failure_table = Array[String](["Understeer wide - lose 1 Gap", "Overheat tires - lose 2 Gap [badge:rattled]", "Minor slide - no penalty"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_slice2"]
@@ -34,7 +34,7 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Lock brakes - lose 1 Gap", "Miss apex - lose 2 Gap", "Scrub speed - no penalty"])
+failure_table = Array[String](["Lock brakes - lose 1 Gap", "Miss apex - lose 2 Gap [badge:sloppy_technique]", "Scrub speed - no penalty"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_slice3"]
@@ -51,7 +51,7 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Clip wall - lose 1 Gap", "Brake too early - lose 2 Gap", "Touch curb - no penalty"])
+failure_table = Array[String](["Clip wall - lose 1 Gap [badge:shaky_brakes]", "Brake too early - lose 2 Gap", "Touch curb - no penalty"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [resource]
