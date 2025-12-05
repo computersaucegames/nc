@@ -32,6 +32,7 @@ signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
 signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
 signal badge_activated(pilot: PilotState, badge_name: String, effect_description: String)
 signal negative_badge_applied(pilot: PilotState, badge: Badge)
+signal pilot_crashed(pilot: PilotState, sector: Sector, reason: String)
 signal race_finished(final_positions: Array)
 
 # Race states
@@ -765,14 +766,31 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	# Emit failure table result event
 	failure_table_triggered.emit(pilot, sector, consequence)
 
-	# Apply negative badge based on failure roll tier
-	# PURPLE: no badge, GREEN: -1 badge, GREY: -2 badge, RED: will be crash
+	# Check if this is a crash (RED tier on failure table roll)
+	if failure_roll.tier == Dice.Tier.RED:
+		# CRASH! Pilot DNF
+		pilot.crash("Crashed", current_round)
+		event.metadata["crashed"] = true
+		event.metadata["consequence"] = consequence
+		event.metadata["initial_roll"] = initial_roll
+		event.roll_results = [failure_roll]
+		event.movement_outcomes = [0]  # No movement for crashed pilots
+
+		# Emit crash signal
+		pilot_crashed.emit(pilot, sector, consequence)
+
+		# Re-emit event to update UI with crash
+		FocusMode.focus_mode_activated.emit(event)
+		return  # Stop processing - pilot is out
+
+	# Apply negative badge based on failure roll tier (not crash)
+	# PURPLE: no badge, GREEN: -1 badge, GREY: -2 badge
 	if badge_id != "":
 		var badge_applied = FailureTableRes.apply_badge_based_on_tier(pilot, badge_id, failure_roll.tier)
 		if badge_applied:
 			# Get the actual badge that was applied (might be base or _severe version)
 			var applied_badge_id = badge_id
-			if failure_roll.tier == Dice.Tier.GREY or failure_roll.tier == Dice.Tier.RED:
+			if failure_roll.tier == Dice.Tier.GREY:
 				applied_badge_id = badge_id + "_severe"
 			var badge = FailureTableRes.load_badge(applied_badge_id)
 			if badge:

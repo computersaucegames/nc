@@ -17,6 +17,9 @@ var position: int = 1
 var grid_position: int = 1  # Starting position on the grid (used for tiebreakers)
 var finished: bool = false  # Track if pilot has finished the race
 var finish_round: int = 0  # Round number when pilot finished
+var did_not_finish: bool = false  # Track if pilot crashed/DNF'd
+var dnf_reason: String = ""  # Why they DNF'd (e.g., "Crashed", "Mechanical")
+var dnf_round: int = 0  # Round number when pilot DNF'd
 
 # Status flags
 var is_race_start: bool = false  # Race start status (overrides other statuses)
@@ -69,6 +72,14 @@ func get_stat(check_type: Sector.CheckType) -> int:
 
 # Get current status as a string for display
 func get_status_string() -> String:
+	# DNF status overrides everything
+	if did_not_finish:
+		return "DNF - %s" % dnf_reason
+
+	# Finished status
+	if finished:
+		return "Finished"
+
 	# Race start status overrides all others
 	if is_race_start:
 		return "Race Start"
@@ -142,3 +153,10 @@ func finish_race(finish_position: int, round_number: int = 0) -> void:
 	clear_statuses()
 	position = finish_position
 	finish_round = round_number
+
+# Mark as DNF/crashed
+func crash(reason: String = "Crashed", round_number: int = 0) -> void:
+	did_not_finish = true
+	dnf_reason = reason
+	dnf_round = round_number
+	clear_statuses()
