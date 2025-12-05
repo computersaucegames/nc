@@ -175,6 +175,11 @@ func log_failure_table(pilot_name: String, sector_name: String, consequence: Str
 		pilot_name, sector_name, consequence
 	])
 
+func log_negative_badge_applied(pilot_name: String, badge_name: String, badge_description: String):
+	output_log.append_text("    [color=red]❌ [b]%s[/b] earned negative badge: [b]%s[/b] - %s[/color]\n" % [
+		pilot_name, badge_name, badge_description
+	])
+
 func log_overflow_penalty_deferred(pilot_name: String, penalty_gaps: int):
 	output_log.append_text("[b][color=orange]⚠️ PENALTY OVERFLOW! [b]%s[/b] will lose %d Gap on next turn[/color][/b]\n\n" % [
 		pilot_name, penalty_gaps
