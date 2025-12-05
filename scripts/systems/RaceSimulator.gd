@@ -161,9 +161,9 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 	}
 
 	# Roll twitch for all pilots (regardless of sector type)
+	# Note: We don't emit pilot_rolling/pilot_rolled during race start
+	# because we show a summary via race_start_rolls instead
 	for pilot in pilots:
-		pilot_rolling.emit(pilot, start_sector)
-
 		# Get badge modifiers for race start
 		var context = {
 			"roll_type": "race_start",
@@ -172,16 +172,14 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 		}
 		var modifiers = BadgeSystem.get_active_modifiers(pilot, context)
 
-		# Emit badge activation events
-		var active_badges = BadgeSystem.get_active_badges_info(pilot, context)
-		for badge_info in active_badges:
-			badge_activated.emit(pilot, badge_info["name"], badge_info["effect"])
+		# Don't emit badge activations during race start - badges are applied
+		# to the roll but we show the results in the race_start_rolls summary
 
 		var roll = Dice.roll_d20(pilot.twitch, "twitch", modifiers, gates, {
 			"context": "race_start",
 			"pilot": pilot.name
 		})
-		pilot_rolled.emit(pilot, roll)
+		# Don't emit pilot_rolled here - we'll show summary via race_start_rolls
 		event.roll_results.append(roll)
 
 		# Calculate movement for this roll (use final_total, not tier enum!)
@@ -208,14 +206,7 @@ func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
 	# Store sorted order in metadata for movement phase
 	event.metadata["sorted_pilots"] = sorted_pilots_with_rolls
 
-	# Re-emit event to update UI with roll results
-	FocusMode.focus_mode_activated.emit(event)
-
-# Apply movement for all pilots in twitch order
-func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
-	var sorted_pilots_with_rolls = event.metadata["sorted_pilots"]
-
-	# Emit race start rolls first, before movement results
+	# Emit race start rolls summary now that all rolls are complete
 	var signal_data = []
 	for entry in sorted_pilots_with_rolls:
 		signal_data.append({
@@ -223,6 +214,13 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 			"roll": entry.roll
 		})
 	race_start_rolls.emit(signal_data)
+
+	# Re-emit event to update UI with roll results
+	FocusMode.focus_mode_activated.emit(event)
+
+# Apply movement for all pilots in twitch order
+func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
+	var sorted_pilots_with_rolls = event.metadata["sorted_pilots"]
 
 	# Process each pilot in twitch order
 	for entry in sorted_pilots_with_rolls:
