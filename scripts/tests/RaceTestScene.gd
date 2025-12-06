@@ -238,8 +238,8 @@ func _on_duel_started(pilot1, pilot2, round_number: int):
 func _on_focus_mode(pilots: Array, reason: String):
 	race_log.log_focus_mode(reason)
 
-func _on_failure_table(pilot: PilotState, sector: Sector, consequence: String):
-	race_log.log_failure_table(pilot.name, sector.sector_name, consequence)
+func _on_failure_table(pilot: PilotState, sector: Sector, consequence: String, roll_result: Dice.DiceResult):
+	race_log.log_failure_table(pilot.name, sector.sector_name, consequence, roll_result)
 
 func _on_negative_badge_applied(pilot: PilotState, badge: Badge):
 	race_log.log_negative_badge_applied(pilot.name, badge.badge_name, badge.description)

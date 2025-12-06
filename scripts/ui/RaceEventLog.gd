@@ -170,9 +170,13 @@ func log_duel_started(pilot1_name: String, pilot2_name: String, round_number: in
 func log_focus_mode(reason: String):
 	output_log.append_text("[b][color=red]🎯 FOCUS MODE: %s[/color][/b]\n" % reason)
 
-func log_failure_table(pilot_name: String, sector_name: String, consequence: String):
-	output_log.append_text("[b][color=red]💥 FAILURE TABLE! [b]%s[/b] at %s: %s[/color][/b]\n\n" % [
+func log_failure_table(pilot_name: String, sector_name: String, consequence: String, roll_result: Dice.DiceResult):
+	var tier_color = get_tier_color_name(roll_result.tier)
+	output_log.append_text("[b][color=red]💥 FAILURE TABLE! [b]%s[/b] at %s: %s[/color][/b]\n" % [
 		pilot_name, sector_name, consequence
+	])
+	output_log.append_text("  Save roll: %d = [color=%s]%s[/color]\n\n" % [
+		roll_result.final_total, tier_color, roll_result.tier_name
 	])
 
 func log_negative_badge_applied(pilot_name: String, badge_name: String, badge_description: String):
