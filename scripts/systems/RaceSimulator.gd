@@ -558,10 +558,10 @@ func handle_pilot_finish(pilot: PilotState):
 	pilot.finish_race(finish_position, current_round)
 	pilot_finished.emit(pilot, finish_position)
 
-# Check if all pilots have finished
+# Check if all pilots have finished or DNF'd
 func check_race_finished() -> bool:
 	for pilot in pilots:
-		if not pilot.finished:
+		if not pilot.finished and not pilot.did_not_finish:
 			return false
 	return true
 
