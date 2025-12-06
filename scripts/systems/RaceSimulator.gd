@@ -27,7 +27,7 @@ signal pilot_finished(pilot: PilotState, finish_position: int)
 signal wheel_to_wheel_detected(pilot1: PilotState, pilot2: PilotState)
 signal duel_started(pilot1: PilotState, pilot2: PilotState, round_number: int)
 signal focus_mode_triggered(pilots: Array, reason: String)
-signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: String)
+signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: String, roll_result: Dice.DiceResult)
 signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
 signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
 signal badge_activated(pilot: PilotState, badge_name: String, effect_description: String)
@@ -764,7 +764,7 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	var badge_id = failure_result.badge_id
 
 	# Emit failure table result event
-	failure_table_triggered.emit(pilot, sector, consequence)
+	failure_table_triggered.emit(pilot, sector, consequence, failure_roll)
 
 	# Check if this is a crash (RED tier on failure table roll)
 	if failure_roll.tier == Dice.Tier.RED:
