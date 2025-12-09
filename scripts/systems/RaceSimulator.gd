@@ -234,14 +234,19 @@ func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
 	for entry in sorted_pilots_with_rolls:
 		var pilot = entry.pilot
 		var movement = entry.movement
+		var sector = current_circuit.sectors[pilot.current_sector]
 
 		# Capture state before movement
 		var start_gap = pilot.gap_in_sector
 		var start_distance = pilot.total_distance
 
-		# Apply movement (no overtaking at race start, pilots are at different gaps)
-		var move_result = MoveProc.apply_movement(pilot, movement, current_circuit)
-		pilot_moved.emit(pilot, movement)
+		# Check for capacity blocking during race start
+		# (no overtaking at race start, but we still need to prevent overcrowding)
+		var final_movement = check_capacity_blocking(pilot, movement, sector)
+
+		# Apply movement
+		var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
+		pilot_moved.emit(pilot, final_movement)
 
 		# Emit detailed movement info
 		var sector_completed = move_result.sectors_completed.size() > 0
@@ -651,6 +656,12 @@ func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: Focus
 
 	FocusMode.deactivate()
 	race_mode = RaceMode.RUNNING
+
+	# Mark both pilots as processed this round
+	if pilot1 not in pilots_processed_this_round:
+		pilots_processed_this_round.append(pilot1)
+	if pilot2 not in pilots_processed_this_round:
+		pilots_processed_this_round.append(pilot2)
 
 	# Resume the current round to process remaining pilots
 	resume_round()

@@ -90,9 +90,20 @@ func log_pilot_rolling(pilot_name: String, sector_name: String, total_gap: int =
 
 func log_pilot_rolled(pilot_name: String, result: Dice.DiceResult):
 	var color = get_tier_color_name(result.tier)
-	output_log.append_text("    Roll: %d = [color=%s]%s[/color]\n" % [
-		result.final_total, color, result.tier_name
-	])
+
+	# Show both rolls if advantage/disadvantage was used
+	if result.had_advantage and result.all_rolls.size() == 2:
+		output_log.append_text("    Roll: [color=cyan]ADVANTAGE[/color] [%d, %d] → %d = [color=%s]%s[/color]\n" % [
+			result.all_rolls[0], result.all_rolls[1], result.final_total, color, result.tier_name
+		])
+	elif result.had_disadvantage and result.all_rolls.size() == 2:
+		output_log.append_text("    Roll: [color=orange]DISADVANTAGE[/color] [%d, %d] → %d = [color=%s]%s[/color]\n" % [
+			result.all_rolls[0], result.all_rolls[1], result.final_total, color, result.tier_name
+		])
+	else:
+		output_log.append_text("    Roll: %d = [color=%s]%s[/color]\n" % [
+			result.final_total, color, result.tier_name
+		])
 
 func log_badge_activated(pilot_name: String, badge_name: String, effect_description: String):
 	output_log.append_text("    [color=magenta]⭐ [b]%s[/b] BADGE: %s - %s[/color]\n" % [
@@ -105,8 +116,26 @@ func log_overtake_detected(overtaking_name: String, overtaken_name: String):
 	])
 
 func log_overtake_attempt(attacker_name: String, defender_name: String, attacker_roll: Dice.DiceResult, defender_roll: Dice.DiceResult):
-	output_log.append_text("  → [b]%s[/b] rolls %d (Attack)\n" % [attacker_name, attacker_roll.final_total])
-	output_log.append_text("  ← [b]%s[/b] rolls %d (Defend)\n" % [defender_name, defender_roll.final_total])
+	# Show attacker roll with advantage/disadvantage if applicable
+	var attacker_roll_text = ""
+	if attacker_roll.had_advantage and attacker_roll.all_rolls.size() == 2:
+		attacker_roll_text = "%d [color=cyan](ADV: %d, %d)[/color]" % [attacker_roll.final_total, attacker_roll.all_rolls[0], attacker_roll.all_rolls[1]]
+	elif attacker_roll.had_disadvantage and attacker_roll.all_rolls.size() == 2:
+		attacker_roll_text = "%d [color=orange](DIS: %d, %d)[/color]" % [attacker_roll.final_total, attacker_roll.all_rolls[0], attacker_roll.all_rolls[1]]
+	else:
+		attacker_roll_text = "%d" % attacker_roll.final_total
+
+	# Show defender roll with advantage/disadvantage if applicable
+	var defender_roll_text = ""
+	if defender_roll.had_advantage and defender_roll.all_rolls.size() == 2:
+		defender_roll_text = "%d [color=cyan](ADV: %d, %d)[/color]" % [defender_roll.final_total, defender_roll.all_rolls[0], defender_roll.all_rolls[1]]
+	elif defender_roll.had_disadvantage and defender_roll.all_rolls.size() == 2:
+		defender_roll_text = "%d [color=orange](DIS: %d, %d)[/color]" % [defender_roll.final_total, defender_roll.all_rolls[0], defender_roll.all_rolls[1]]
+	else:
+		defender_roll_text = "%d" % defender_roll.final_total
+
+	output_log.append_text("  → [b]%s[/b] rolls %s (Attack)\n" % [attacker_name, attacker_roll_text])
+	output_log.append_text("  ← [b]%s[/b] rolls %s (Defend)\n" % [defender_name, defender_roll_text])
 
 func log_overtake_completed(overtaking_name: String, overtaken_name: String):
 	output_log.append_text("[color=green]  ✓ OVERTAKE SUCCESS! [b]%s[/b] passes [b]%s[/b]![/color]\n" % [
@@ -175,8 +204,18 @@ func log_failure_table(pilot_name: String, sector_name: String, consequence: Str
 	output_log.append_text("[b][color=red]💥 FAILURE TABLE! [b]%s[/b] at %s: %s[/color][/b]\n" % [
 		pilot_name, sector_name, consequence
 	])
-	output_log.append_text("  Save roll: %d = [color=%s]%s[/color]\n\n" % [
-		roll_result.final_total, tier_color, roll_result.tier_name
+
+	# Show roll with advantage/disadvantage if applicable
+	var roll_text = ""
+	if roll_result.had_advantage and roll_result.all_rolls.size() == 2:
+		roll_text = "%d [color=cyan](ADV: %d, %d)[/color]" % [roll_result.final_total, roll_result.all_rolls[0], roll_result.all_rolls[1]]
+	elif roll_result.had_disadvantage and roll_result.all_rolls.size() == 2:
+		roll_text = "%d [color=orange](DIS: %d, %d)[/color]" % [roll_result.final_total, roll_result.all_rolls[0], roll_result.all_rolls[1]]
+	else:
+		roll_text = "%d" % roll_result.final_total
+
+	output_log.append_text("  Save roll: %s = [color=%s]%s[/color]\n\n" % [
+		roll_text, tier_color, roll_result.tier_name
 	])
 
 func log_negative_badge_applied(pilot_name: String, badge_name: String, badge_description: String):
@@ -215,8 +254,18 @@ func log_w2w_failure_triggered(failing_pilot_name: String, other_pilot_name: Str
 func log_w2w_failure_roll(failing_pilot_name: String, consequence_text: String, roll_result: Dice.DiceResult):
 	var tier_color = get_tier_color_name(roll_result.tier)
 	output_log.append_text("[b][color=red]💥 W2W FAILURE TABLE: %s[/color][/b]\n" % consequence_text)
-	output_log.append_text("  [b]%s[/b] save roll: %d = [color=%s]%s[/color]\n" % [
-		failing_pilot_name, roll_result.final_total, tier_color, roll_result.tier_name
+
+	# Show roll with advantage/disadvantage if applicable
+	var roll_text = ""
+	if roll_result.had_advantage and roll_result.all_rolls.size() == 2:
+		roll_text = "%d [color=cyan](ADV: %d, %d)[/color]" % [roll_result.final_total, roll_result.all_rolls[0], roll_result.all_rolls[1]]
+	elif roll_result.had_disadvantage and roll_result.all_rolls.size() == 2:
+		roll_text = "%d [color=orange](DIS: %d, %d)[/color]" % [roll_result.final_total, roll_result.all_rolls[0], roll_result.all_rolls[1]]
+	else:
+		roll_text = "%d" % roll_result.final_total
+
+	output_log.append_text("  [b]%s[/b] save roll: %s = [color=%s]%s[/color]\n" % [
+		failing_pilot_name, roll_text, tier_color, roll_result.tier_name
 	])
 
 func log_w2w_contact_triggered(failing_pilot_name: String, other_pilot_name: String, consequence_text: String):
@@ -227,8 +276,18 @@ func log_w2w_contact_triggered(failing_pilot_name: String, other_pilot_name: Str
 func log_w2w_avoidance_roll(avoiding_pilot_name: String, roll_result: Dice.DiceResult, description: String):
 	var tier_color = get_tier_color_name(roll_result.tier)
 	output_log.append_text("[b][color=cyan]🎯 AVOIDANCE ROLL![/color][/b]\n")
-	output_log.append_text("  [b]%s[/b] Twitch save (HARD): %d = [color=%s]%s[/color]\n" % [
-		avoiding_pilot_name, roll_result.final_total, tier_color, roll_result.tier_name
+
+	# Show roll with advantage/disadvantage if applicable
+	var roll_text = ""
+	if roll_result.had_advantage and roll_result.all_rolls.size() == 2:
+		roll_text = "%d [color=cyan](ADV: %d, %d)[/color]" % [roll_result.final_total, roll_result.all_rolls[0], roll_result.all_rolls[1]]
+	elif roll_result.had_disadvantage and roll_result.all_rolls.size() == 2:
+		roll_text = "%d [color=orange](DIS: %d, %d)[/color]" % [roll_result.final_total, roll_result.all_rolls[0], roll_result.all_rolls[1]]
+	else:
+		roll_text = "%d" % roll_result.final_total
+
+	output_log.append_text("  [b]%s[/b] Twitch save (HARD): %s = [color=%s]%s[/color]\n" % [
+		avoiding_pilot_name, roll_text, tier_color, roll_result.tier_name
 	])
 	output_log.append_text("  [color=yellow]%s[/color]\n\n" % description)
 
