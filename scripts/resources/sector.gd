@@ -39,6 +39,11 @@ enum CheckType {
 ]
 @export var failure_table_check_type: CheckType = CheckType.EDGE  # Skill check for failure table roll
 
+# Optional: Sector-specific W2W failure table override
+# If empty, uses global W2W failure table from Globals
+@export_group("W2W Failure Table")
+@export var w2w_failure_table_override: Array[Dictionary] = []
+
 func get_movement_for_roll(roll_value: int) -> int:
 	if roll_value < grey_threshold:
 		return red_movement
@@ -63,6 +68,24 @@ func get_random_failure_consequence() -> String:
 	if failure_table.is_empty():
 		return "Generic failure"
 	return failure_table.pick_random()
+
+# Get W2W failure table (sector-specific or global)
+func get_w2w_failure_table() -> Array[Dictionary]:
+	if not w2w_failure_table_override.is_empty():
+		return w2w_failure_table_override
+	return Globals.w2w_failure_table
+
+# Get a random W2W failure consequence
+func get_random_w2w_failure() -> Dictionary:
+	var table = get_w2w_failure_table()
+	if table.is_empty():
+		return {
+			"text": "Generic W2W failure",
+			"penalty_gaps": 1,
+			"triggers_contact": false,
+			"badge_id": ""
+		}
+	return table.pick_random()
 	
 # Helper function to get the check type as a string (for display/logging)
 func get_check_type_string() -> String:
