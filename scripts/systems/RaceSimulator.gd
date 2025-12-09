@@ -373,12 +373,6 @@ func process_pilot_turn(pilot: PilotState):
 	var roll_result = make_pilot_roll(pilot, sector)
 	pilot_rolled.emit(pilot, roll_result)
 
-	# TODO: Issue #3 - Consecutive RED results lose first overflow penalty
-	# If pilot has penalty_next_turn > 0 and rolls RED again, the RED check below
-	# skips penalty application (lines 330-336), causing the first penalty to be lost.
-	# Consider moving penalty application to before this RED check, or accumulating penalties.
-	# See KNOWN_ISSUES.md for details.
-
 	# Check if this is a red result - trigger failure table focus mode
 	if roll_result.tier == Dice.Tier.RED:
 		process_red_result_focus_mode(pilot, sector, roll_result)
@@ -638,12 +632,17 @@ func _on_focus_mode_advance(pilot1: PilotState, pilot2: PilotState, event: Focus
 
 # Execute rolls for both W2W pilots
 func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusModeManager.FocusModeEvent):
-	# TODO: Issue #1 - Overflow penalties not applied during W2W focus mode
-	# This function bypasses the normal process_pilot_turn() flow, which means
-	# penalty_next_turn is never applied for pilots in W2W. Need to apply
-	# overflow penalties here before rolling. See KNOWN_ISSUES.md for details.
-
 	var sector = event.sector
+
+	# Apply any pending overflow penalties from previous failures
+	# Store them to reduce movement later (after rolls are made)
+	var pilot1_pending_penalty = pilot1.penalty_next_turn
+	var pilot2_pending_penalty = pilot2.penalty_next_turn
+
+	if pilot1_pending_penalty > 0:
+		overflow_penalty_applied.emit(pilot1, pilot1_pending_penalty)
+	if pilot2_pending_penalty > 0:
+		overflow_penalty_applied.emit(pilot2, pilot2_pending_penalty)
 
 	# Roll for both pilots
 	pilot_rolling.emit(pilot1, sector)
@@ -657,15 +656,18 @@ func _execute_w2w_rolls(pilot1: PilotState, pilot2: PilotState, event: FocusMode
 	# Store rolls in event
 	event.roll_results = [roll1, roll2]
 
-	# TODO: Issue #2 - RED results during W2W don't trigger failure tables
-	# If either pilot rolls RED here, they just get red_movement without
-	# triggering a failure table. This may be intentional (to avoid nested
-	# focus modes), but should be documented or reconsidered.
-	# See KNOWN_ISSUES.md for details.
-
 	# Calculate movement outcomes
 	var movement1 = MoveProc.calculate_base_movement(sector, roll1)
 	var movement2 = MoveProc.calculate_base_movement(sector, roll2)
+
+	# Apply pending penalties to movement
+	if pilot1_pending_penalty > 0:
+		movement1 = max(0, movement1 - pilot1_pending_penalty)
+		pilot1.penalty_next_turn = 0  # Clear penalty after applying
+	if pilot2_pending_penalty > 0:
+		movement2 = max(0, movement2 - pilot2_pending_penalty)
+		pilot2.penalty_next_turn = 0  # Clear penalty after applying
+
 	event.movement_outcomes = [movement1, movement2]
 
 	# Re-emit event to update UI with roll results
@@ -804,11 +806,19 @@ func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll
 	if badge_id != "":
 		event.metadata["badge_id"] = badge_id
 
-	# Calculate movement (base red_movement minus penalty, minimum 0)
-	var base_movement = max(0, sector.red_movement - penalty_gaps)
+	# Calculate total penalty: NEW penalty from this failure + any EXISTING pending penalty
+	var total_penalty = penalty_gaps
+	if pilot.penalty_next_turn > 0:
+		total_penalty += pilot.penalty_next_turn
+		# Log that we're applying the previous pending penalty
+		overflow_penalty_applied.emit(pilot, pilot.penalty_next_turn)
+		pilot.penalty_next_turn = 0  # Clear it since we're accounting for it now
 
-	# Calculate overflow penalty (penalty that exceeds available movement)
-	var overflow_penalty = max(0, penalty_gaps - sector.red_movement)
+	# Calculate movement (base red_movement minus total penalty, minimum 0)
+	var base_movement = max(0, sector.red_movement - total_penalty)
+
+	# Calculate NEW overflow penalty (penalty that exceeds available movement)
+	var overflow_penalty = max(0, total_penalty - sector.red_movement)
 	if overflow_penalty > 0:
 		pilot.penalty_next_turn = overflow_penalty
 		event.metadata["overflow_penalty"] = overflow_penalty

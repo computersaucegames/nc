@@ -149,10 +149,10 @@ static func apply_start_bonus(pilot: PilotState, start_roll: Dice.DiceResult) ->
 static func update_all_positions(pilots: Array) -> void:
 	# Sort by total distance (highest first)
 	pilots.sort_custom(func(a, b): return a.total_distance > b.total_distance)
-	
-	# Update position numbers
+
+	# Update position numbers (only for pilots still racing)
 	for i in range(pilots.size()):
-		if not pilots[i].finished:
+		if not pilots[i].finished and not pilots[i].did_not_finish:
 			pilots[i].position = i + 1
 
 # Check if a pilot can continue racing (not finished and not DNF)
