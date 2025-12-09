@@ -31,9 +31,9 @@ static func check_potential_overtakes(attacker, planned_movement: int, all_pilot
 	var attacker_new_position = attacker.gap_in_sector + planned_movement
 	
 	for other in all_pilots:
-		if other == attacker or other.finished:
+		if other == attacker or other.finished or other.did_not_finish:
 			continue
-		
+
 		# Check if they're ahead of us now and we'd pass them
 		if other.current_sector == attacker.current_sector:
 			var currently_behind = attacker.gap_in_sector < other.gap_in_sector

@@ -60,8 +60,17 @@ func log_start_rolls(start_results: Array):
 		var color = get_tier_color_name(roll.tier)
 		var effect = get_start_roll_effect(roll.tier)
 
-		output_log.append_text("  [b]%s[/b]: Twitch roll %d = [color=%s]%s[/color]%s\n" % [
-			pilot.name, roll.final_total, color, roll.tier_name, effect
+		# Show individual d20 rolls if advantage/disadvantage was used
+		var roll_display = ""
+		if roll.all_rolls.size() > 1:
+			# Format: "rolled 15,18 → 18" for advantage/disadvantage
+			var rolls_str = ",".join(roll.all_rolls.map(func(r): return str(r)))
+			roll_display = "rolled %s → %d" % [rolls_str, roll.final_total]
+		else:
+			roll_display = "roll %d" % roll.final_total
+
+		output_log.append_text("  [b]%s[/b]: Twitch %s = [color=%s]%s[/color]%s\n" % [
+			pilot.name, roll_display, color, roll.tier_name, effect
 		])
 
 	output_log.append_text("\n")
