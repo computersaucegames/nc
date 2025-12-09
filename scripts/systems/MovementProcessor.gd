@@ -18,6 +18,43 @@ class MovementResult:
 static func calculate_base_movement(sector: Sector, roll_result: Dice.DiceResult) -> int:
 	return sector.get_movement_for_roll(roll_result.final_total)
 
+# Calculate where a pilot would end up after movement (without applying it)
+# Returns Dictionary with "sector" (index) and "gap" (position in sector)
+static func calculate_destination_position(
+	pilot: PilotState,
+	movement: int,
+	circuit: Circuit
+) -> Dictionary:
+	var new_gap = pilot.gap_in_sector + movement
+	var sector_idx = pilot.current_sector
+	var current_sector = circuit.sectors[sector_idx]
+
+	# Handle sector boundary crossings
+	while new_gap >= current_sector.length_in_gap:
+		# Calculate excess movement beyond sector boundary
+		var excess = new_gap - current_sector.length_in_gap
+		# Apply carrythru (momentum) to determine how much carries to next sector
+		var momentum = min(excess, current_sector.carrythru)
+
+		# Move to next sector
+		sector_idx += 1
+		if sector_idx >= circuit.sectors.size():
+			sector_idx = 0  # Wrap to next lap
+
+		# Start at momentum position in new sector
+		new_gap = momentum
+
+		# Update current sector for next iteration
+		if sector_idx < circuit.sectors.size():
+			current_sector = circuit.sectors[sector_idx]
+		else:
+			break  # Safety check
+
+	return {
+		"sector": sector_idx,
+		"gap": new_gap
+	}
+
 # Apply movement to a pilot, handling sector and lap completion
 static func apply_movement(
 	pilot: PilotState, 

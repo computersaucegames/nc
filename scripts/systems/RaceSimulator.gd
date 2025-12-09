@@ -498,37 +498,26 @@ func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -
 	if movement <= 0:
 		return movement
 
-	# Calculate where the pilot would end up
-	var target_gap = pilot.gap_in_sector + movement
-	var target_sector = pilot.current_sector
+	# Calculate actual destination using MovementProcessor logic (handles sector boundaries)
+	var destination = MoveProc.calculate_destination_position(pilot, movement, current_circuit)
+	var target_sector_idx = destination["sector"]
+	var target_gap = destination["gap"]
+	var target_sector = current_circuit.sectors[target_sector_idx]
 
 	# Count how many other pilots are already at this exact position
 	var pilots_at_target = []
 	for other in pilots:
-		if other == pilot or other.finished:
+		if other == pilot or other.finished or other.did_not_finish:
 			continue
 
 		# Check if other pilot is at the target position
-		if other.current_sector == target_sector and other.gap_in_sector == target_gap:
+		if other.current_sector == target_sector_idx and other.gap_in_sector == target_gap:
 			pilots_at_target.append(other)
 
 	# If we've reached capacity, block this pilot from moving into that position
-	if pilots_at_target.size() >= sector.max_side_by_side:
-		# Reduce movement to stay one gap behind
-		var adjusted_movement = max(0, movement - 1)
-		# Make sure we don't end up at the same position
-		while adjusted_movement > 0:
-			var new_target = pilot.gap_in_sector + adjusted_movement
-			var count_at_new_target = 0
-			for other in pilots:
-				if other == pilot or other.finished:
-					continue
-				if other.current_sector == target_sector and other.gap_in_sector == new_target:
-					count_at_new_target += 1
-
-			if count_at_new_target < sector.max_side_by_side:
-				break  # Found a valid position
-			adjusted_movement -= 1
+	if pilots_at_target.size() >= target_sector.max_side_by_side:
+		# Recursively reduce movement until we find a valid position
+		var adjusted_movement = check_capacity_blocking(pilot, movement - 1, sector)
 
 		# Emit signal that this pilot was blocked by capacity
 		capacity_blocked.emit(pilot, pilots_at_target, movement, adjusted_movement)
@@ -829,19 +818,6 @@ func _execute_w2w_failure_roll(event: FocusModeManager.FocusModeEvent):
 	# Emit failure roll result for logging
 	w2w_failure_roll_result.emit(failing_pilot, failure_consequence["text"], failure_roll)
 
-	# Check if crash (RED tier on failure table roll)
-	if failure_roll.tier == Dice.Tier.RED:
-		failing_pilot.crash("W2W Crash", current_round)
-		avoiding_pilot.crash("W2W Crash - caught in collision", current_round)
-
-		event.metadata["both_crashed"] = true
-		pilot_crashed.emit(failing_pilot, sector, failure_consequence["text"])
-		pilot_crashed.emit(avoiding_pilot, sector, "Caught in W2W crash")
-
-		event.movement_outcomes = [0, 0]
-		FocusMode.focus_mode_activated.emit(event)
-		return
-
 	# Apply negative badge based on failure roll tier (if badge specified)
 	var badge_id = failure_consequence.get("badge_id", "")
 	if badge_id != "":
@@ -863,11 +839,30 @@ func _execute_w2w_failure_roll(event: FocusModeManager.FocusModeEvent):
 	if contact_triggered:
 		# Contact! Other pilot needs to make avoidance save
 		w2w_contact_triggered.emit(failing_pilot, avoiding_pilot, failure_consequence)
+	elif failure_roll.tier == Dice.Tier.RED:
+		# RED without contact - only failing pilot crashes
+		failing_pilot.crash("W2W Crash", current_round)
+		event.metadata["failing_pilot_crashed_solo"] = true
+		pilot_crashed.emit(failing_pilot, sector, failure_consequence["text"])
 
-	# Calculate movement for failing pilot (reduced by penalty)
-	var penalty_gaps = failure_consequence.get("penalty_gaps", 0)
-	var base_movement = max(0, sector.red_movement - penalty_gaps)
-	event.metadata["failing_pilot_movement"] = base_movement
+		# Avoiding pilot continues with normal movement
+		var avoiding_roll = event.roll_results[1] if event.metadata["failing_pilot"] == event.pilots[0] else event.roll_results[0]
+		event.metadata["avoiding_pilot_movement"] = MoveProc.calculate_base_movement(sector, avoiding_roll)
+		event.metadata["failing_pilot_movement"] = 0
+
+	# Calculate movement for failing pilot (reduced by penalty) if not already set
+	if not event.metadata.has("failing_pilot_movement"):
+		var penalty_gaps = failure_consequence.get("penalty_gaps", 0)
+		var base_movement = max(0, sector.red_movement - penalty_gaps)
+		event.metadata["failing_pilot_movement"] = base_movement
+
+	# Calculate avoiding pilot movement if not already set and not crashed
+	if not event.metadata.has("avoiding_pilot_movement") and not event.metadata.get("failing_pilot_crashed_solo", false):
+		# Will be calculated during avoidance save if contact triggered
+		# Otherwise use normal roll result
+		if not contact_triggered:
+			var avoiding_roll = event.roll_results[1] if event.metadata["failing_pilot"] == event.pilots[0] else event.roll_results[0]
+			event.metadata["avoiding_pilot_movement"] = MoveProc.calculate_base_movement(sector, avoiding_roll)
 
 	# Re-emit event to show failure roll result
 	FocusMode.focus_mode_activated.emit(event)
@@ -956,21 +951,22 @@ func _apply_w2w_failure_movement(event: FocusModeManager.FocusModeEvent):
 	var failing_movement = event.metadata.get("failing_pilot_movement", 0)
 	var avoiding_movement = event.metadata.get("avoiding_pilot_movement", 0)
 
-	# Failing pilot movement
-	var final_failing_movement = handle_overtaking(failing_pilot, failing_movement, sector)
-	final_failing_movement = check_capacity_blocking(failing_pilot, final_failing_movement, sector)
+	# Failing pilot movement (only if not crashed solo)
+	if not event.metadata.get("failing_pilot_crashed_solo", false):
+		var final_failing_movement = handle_overtaking(failing_pilot, failing_movement, sector)
+		final_failing_movement = check_capacity_blocking(failing_pilot, final_failing_movement, sector)
 
-	var start_gap_failing = failing_pilot.gap_in_sector
-	var start_distance_failing = failing_pilot.total_distance
+		var start_gap_failing = failing_pilot.gap_in_sector
+		var start_distance_failing = failing_pilot.total_distance
 
-	var move_result_failing = MoveProc.apply_movement(failing_pilot, final_failing_movement, current_circuit)
-	pilot_moved.emit(failing_pilot, final_failing_movement)
+		var move_result_failing = MoveProc.apply_movement(failing_pilot, final_failing_movement, current_circuit)
+		pilot_moved.emit(failing_pilot, final_failing_movement)
 
-	var sector_completed_failing = move_result_failing.sectors_completed.size() > 0
-	var momentum_failing = move_result_failing.momentum_gained[0] if move_result_failing.momentum_gained.size() > 0 else 0
-	pilot_movement_details.emit(failing_pilot.name, start_gap_failing, start_distance_failing, final_failing_movement, failing_pilot.gap_in_sector, failing_pilot.total_distance, sector_completed_failing, momentum_failing)
+		var sector_completed_failing = move_result_failing.sectors_completed.size() > 0
+		var momentum_failing = move_result_failing.momentum_gained[0] if move_result_failing.momentum_gained.size() > 0 else 0
+		pilot_movement_details.emit(failing_pilot.name, start_gap_failing, start_distance_failing, final_failing_movement, failing_pilot.gap_in_sector, failing_pilot.total_distance, sector_completed_failing, momentum_failing)
 
-	handle_movement_results(failing_pilot, move_result_failing)
+		handle_movement_results(failing_pilot, move_result_failing)
 
 	# Avoiding pilot movement
 	var final_avoiding_movement = handle_overtaking(avoiding_pilot, avoiding_movement, sector)
