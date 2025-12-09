@@ -200,6 +200,38 @@ func log_overflow_penalty_applied(pilot_name: String, penalty_gaps: int):
 		pilot_name, penalty_gaps
 	])
 
+func log_w2w_dual_crash(pilot1_name: String, pilot2_name: String, sector_name: String):
+	output_log.append_text("[b][color=red]💥💥 DUAL W2W CRASH! Both [b]%s[/b] and [b]%s[/b] lost control at %s![/color][/b]\n" % [
+		pilot1_name, pilot2_name, sector_name
+	])
+	output_log.append_text("[b][color=orange]    Both pilots are OUT of the race - DNF[/color][/b]\n\n")
+
+func log_w2w_failure_triggered(failing_pilot_name: String, other_pilot_name: String, sector_name: String):
+	output_log.append_text("[b][color=red]⚠️ W2W FAILURE! [b]%s[/b] in trouble at %s![/color][/b]\n" % [
+		failing_pilot_name, sector_name
+	])
+	output_log.append_text("[b][color=yellow]    [b]%s[/b] must react...[/color][/b]\n" % other_pilot_name)
+
+func log_w2w_failure_roll(failing_pilot_name: String, consequence_text: String, roll_result: Dice.DiceResult):
+	var tier_color = get_tier_color_name(roll_result.tier)
+	output_log.append_text("[b][color=red]💥 W2W FAILURE TABLE: %s[/color][/b]\n" % consequence_text)
+	output_log.append_text("  [b]%s[/b] save roll: %d = [color=%s]%s[/color]\n" % [
+		failing_pilot_name, roll_result.final_total, tier_color, roll_result.tier_name
+	])
+
+func log_w2w_contact_triggered(failing_pilot_name: String, other_pilot_name: String, consequence_text: String):
+	output_log.append_text("[b][color=orange]⚠️ CONTACT! [b]%s[/b] making contact with [b]%s[/b]![/color][/b]\n" % [
+		failing_pilot_name, other_pilot_name
+	])
+
+func log_w2w_avoidance_roll(avoiding_pilot_name: String, roll_result: Dice.DiceResult, description: String):
+	var tier_color = get_tier_color_name(roll_result.tier)
+	output_log.append_text("[b][color=cyan]🎯 AVOIDANCE ROLL![/color][/b]\n")
+	output_log.append_text("  [b]%s[/b] Twitch save (HARD): %d = [color=%s]%s[/color]\n" % [
+		avoiding_pilot_name, roll_result.final_total, tier_color, roll_result.tier_name
+	])
+	output_log.append_text("  [color=yellow]%s[/color]\n\n" % description)
+
 func log_race_finished(final_positions: Array):
 	output_log.append_text("\n[b][color=gold]🏆 RACE FINISHED![/color][/b]\n")
 	output_log.append_text("Final Results:\n")

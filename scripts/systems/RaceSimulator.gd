@@ -34,8 +34,10 @@ signal badge_activated(pilot: PilotState, badge_name: String, effect_description
 signal negative_badge_applied(pilot: PilotState, badge: Badge)
 signal pilot_crashed(pilot: PilotState, sector: Sector, reason: String)
 signal w2w_failure_triggered(failing_pilot: PilotState, other_pilot: PilotState, sector: Sector)
+signal w2w_failure_roll_result(failing_pilot: PilotState, consequence: String, roll_result: Dice.DiceResult)
 signal w2w_contact_triggered(failing_pilot: PilotState, other_pilot: PilotState, consequence: Dictionary)
 signal w2w_avoidance_roll_required(pilot: PilotState, modified_gates: Dictionary)
+signal w2w_avoidance_roll_result(avoiding_pilot: PilotState, roll_result: Dice.DiceResult, description: String)
 signal w2w_dual_crash(pilot1: PilotState, pilot2: PilotState, sector: Sector)
 signal race_finished(final_positions: Array)
 
@@ -813,6 +815,9 @@ func _execute_w2w_failure_roll(event: FocusModeManager.FocusModeEvent):
 	# Emit W2W failure triggered signal
 	w2w_failure_triggered.emit(failing_pilot, avoiding_pilot, sector)
 
+	# Emit failure roll result for logging
+	w2w_failure_roll_result.emit(failing_pilot, failure_consequence["text"], failure_roll)
+
 	# Check if crash (RED tier on failure table roll)
 	if failure_roll.tier == Dice.Tier.RED:
 		failing_pilot.crash("W2W Crash", current_round)
@@ -919,6 +924,9 @@ func _execute_w2w_avoidance_save(event: FocusModeManager.FocusModeEvent):
 			event.metadata["failing_pilot_movement"] = 0
 			event.metadata["avoiding_pilot_movement"] = 0
 			event.metadata["avoidance_description"] = "CRASH! Failed to avoid contact"
+
+	# Emit avoidance roll result for logging
+	w2w_avoidance_roll_result.emit(avoiding_pilot, avoidance_roll, event.metadata["avoidance_description"])
 
 	# Re-emit event to show avoidance roll result
 	FocusMode.focus_mode_activated.emit(event)
