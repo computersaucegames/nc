@@ -54,7 +54,7 @@ class DiceResult:
 	# Advantage/Disadvantage tracking
 	var had_advantage: bool = false   # True if advantage was applied
 	var had_disadvantage: bool = false # True if disadvantage was applied
-	var all_rolls: Array[int] = []    # All d20 rolls made (for advantage/disadvantage display)
+	var all_rolls: Array = []         # All d20 rolls made (for advantage/disadvantage display)
 
 	var context: Dictionary = {}     # Additional context (who rolled, sector, etc)
 	
