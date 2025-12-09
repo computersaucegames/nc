@@ -38,19 +38,24 @@ class RollModifier:
 
 # Dice result object containing all roll information
 class DiceResult:
-	var base_roll: int = 0           # The actual d20 roll
+	var base_roll: int = 0           # The actual d20 roll (the one that counts)
 	var stat_value: int = 0          # The stat being used
 	var stat_name: String = ""       # Which stat was used
 	var flat_modifiers: int = 0      # Sum of all flat bonuses
 	var final_total: int = 0         # base_roll + stat + modifiers
-	
+
 	var tier: Tier
 	var tier_name: String
-	
+
 	var gates: Dictionary = {}       # The thresholds used
 	var modifiers_applied: Array[String] = []  # List of what affected the roll
 	var roll_log: Array[String] = [] # Detailed log of the roll process
-	
+
+	# Advantage/Disadvantage tracking
+	var had_advantage: bool = false   # True if advantage was applied
+	var had_disadvantage: bool = false # True if disadvantage was applied
+	var all_rolls: Array[int] = []    # All d20 rolls made (for advantage/disadvantage display)
+
 	var context: Dictionary = {}     # Additional context (who rolled, sector, etc)
 	
 	func get_tier_color() -> Color:
@@ -118,18 +123,23 @@ func roll_d20(
 	# Make the actual roll(s)
 	var roll1 = randi_range(1, 20)
 	var roll2 = 0
-	
+
 	if has_advantage and not has_disadvantage:
 		roll2 = randi_range(1, 20)
 		result.base_roll = max(roll1, roll2)
+		result.had_advantage = true
+		result.all_rolls = [roll1, roll2]
 		result.roll_log.append("Rolled with advantage: %d and %d, taking %d" % [roll1, roll2, result.base_roll])
 	elif has_disadvantage and not has_advantage:
 		roll2 = randi_range(1, 20)
 		result.base_roll = min(roll1, roll2)
+		result.had_disadvantage = true
+		result.all_rolls = [roll1, roll2]
 		result.roll_log.append("Rolled with disadvantage: %d and %d, taking %d" % [roll1, roll2, result.base_roll])
 	else:
 		# Normal roll or advantage+disadvantage cancel out
 		result.base_roll = roll1
+		result.all_rolls = [roll1]
 		if has_advantage and has_disadvantage:
 			result.roll_log.append("Advantage and disadvantage cancel out")
 		result.roll_log.append("Rolled: %d" % result.base_roll)
