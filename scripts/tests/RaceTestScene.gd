@@ -65,6 +65,12 @@ func setup_race_simulator():
 	race_sim.pilot_crashed.connect(_on_pilot_crashed)
 	race_sim.overflow_penalty_deferred.connect(_on_overflow_penalty_deferred)
 	race_sim.overflow_penalty_applied.connect(_on_overflow_penalty_applied)
+	race_sim.w2w_dual_crash.connect(_on_w2w_dual_crash)
+	race_sim.w2w_failure_triggered.connect(_on_w2w_failure_triggered)
+	race_sim.w2w_failure_roll_result.connect(_on_w2w_failure_roll_result)
+	race_sim.w2w_contact_triggered.connect(_on_w2w_contact_triggered)
+	race_sim.w2w_avoidance_roll_required.connect(_on_w2w_avoidance_roll_required)
+	race_sim.w2w_avoidance_roll_result.connect(_on_w2w_avoidance_roll_result)
 	race_sim.race_finished.connect(_on_race_finished)
 
 func create_test_circuit():
@@ -254,6 +260,26 @@ func _on_overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int):
 
 func _on_overflow_penalty_applied(pilot: PilotState, penalty_gaps: int):
 	race_log.log_overflow_penalty_applied(pilot.name, penalty_gaps)
+
+func _on_w2w_dual_crash(pilot1: PilotState, pilot2: PilotState, sector: Sector):
+	race_log.log_w2w_dual_crash(pilot1.name, pilot2.name, sector.sector_name)
+	update_pilot_displays()
+
+func _on_w2w_failure_triggered(failing_pilot: PilotState, other_pilot: PilotState, sector: Sector):
+	race_log.log_w2w_failure_triggered(failing_pilot.name, other_pilot.name, sector.sector_name)
+
+func _on_w2w_failure_roll_result(failing_pilot: PilotState, consequence: String, roll_result: Dice.DiceResult):
+	race_log.log_w2w_failure_roll(failing_pilot.name, consequence, roll_result)
+
+func _on_w2w_contact_triggered(failing_pilot: PilotState, other_pilot: PilotState, consequence: Dictionary):
+	race_log.log_w2w_contact_triggered(failing_pilot.name, other_pilot.name, consequence["text"])
+
+func _on_w2w_avoidance_roll_required(pilot: PilotState, modified_gates: Dictionary):
+	# This signal is emitted but we log the actual roll result separately
+	pass
+
+func _on_w2w_avoidance_roll_result(avoiding_pilot: PilotState, roll_result: Dice.DiceResult, description: String):
+	race_log.log_w2w_avoidance_roll(avoiding_pilot.name, roll_result, description)
 
 func _on_race_finished(final_positions: Array):
 	race_log.log_race_finished(final_positions)
