@@ -225,24 +225,24 @@ func create_test_circuit() -> Circuit:
 func create_test_pilots_array() -> Array:
 	var pilot1_resource = Pilot.new()
 	pilot1_resource.pilot_name = "Pilot A"
-	pilot1_resource.twitch = 7
-	pilot1_resource.craft = 6
-	pilot1_resource.sync = 5
-	pilot1_resource.edge = 8
+	pilot1_resource.TWITCH = 7
+	pilot1_resource.CRAFT = 6
+	pilot1_resource.SYNC = 5
+	pilot1_resource.EDGE = 8
 
 	var pilot2_resource = Pilot.new()
 	pilot2_resource.pilot_name = "Pilot B"
-	pilot2_resource.twitch = 6
-	pilot2_resource.craft = 7
-	pilot2_resource.sync = 8
-	pilot2_resource.edge = 5
+	pilot2_resource.TWITCH = 6
+	pilot2_resource.CRAFT = 7
+	pilot2_resource.SYNC = 8
+	pilot2_resource.EDGE = 5
 
 	var pilot3_resource = Pilot.new()
 	pilot3_resource.pilot_name = "Pilot C"
-	pilot3_resource.twitch = 8
-	pilot3_resource.craft = 5
-	pilot3_resource.sync = 6
-	pilot3_resource.edge = 7
+	pilot3_resource.TWITCH = 8
+	pilot3_resource.CRAFT = 5
+	pilot3_resource.SYNC = 6
+	pilot3_resource.EDGE = 7
 
 	return [
 		{"pilot": pilot1_resource, "headshot": ""},
