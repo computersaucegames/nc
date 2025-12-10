@@ -126,141 +126,64 @@ func begin_race_start_focus_mode():
 	# Create Focus Mode event for race start
 	var event = FocusMode.create_race_start_event(pilots, start_sector)
 
+	# Create sequence
+	current_focus_sequence = RaceStartSequence.new(event, self)
+
 	# Enter Focus Mode state
 	race_mode = RaceMode.FOCUS_MODE
 
 	# Connect to Focus Mode advance signal
 	current_focus_advance_callback = func():
-		_on_race_start_focus_advance(event)
+		_advance_focus_sequence()
 	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
 
 	# Activate Focus Mode (UI will display grid)
 	FocusMode.activate(event)
 
-# Handle Focus Mode advancement during race start
-func _on_race_start_focus_advance(event: FocusModeManager.FocusModeEvent):
-	# Check what stage we're in
-	if event.roll_results.size() == 0:
-		# Stage 1: Execute all twitch rolls
-		_execute_race_start_rolls(event)
-	else:
-		# Stage 2: Apply movement in twitch order and start race
-		_apply_race_start_movement(event)
+	# Trigger race start signal
+	focus_mode_triggered.emit(pilots, "Race Start")
 
-		# Disconnect the advance callback
-		if current_focus_advance_callback.is_valid():
-			FocusMode.focus_mode_advance_requested.disconnect(current_focus_advance_callback)
+# Generic handler for focus sequence advancement (Milestone 2)
+func _advance_focus_sequence():
+	if not current_focus_sequence:
+		push_error("No active focus sequence!")
+		return
 
-		FocusMode.deactivate()
-		race_mode = RaceMode.RUNNING
+	var result = current_focus_sequence.advance()
 
-		# Start the first round
-		process_round()
+	# Emit signal if requested
+	if result.emit_signal != "":
+		_emit_sequence_signal(result.emit_signal, result.signal_data)
 
-# Execute twitch rolls for all pilots at race start
-func _execute_race_start_rolls(event: FocusModeManager.FocusModeEvent):
-	var start_sector = event.sector
+	# Exit focus mode if done
+	if result.exit_focus_mode:
+		_exit_focus_mode()
 
-	# Prepare gates from sector thresholds
-	var gates = {
-		"grey": start_sector.grey_threshold,
-		"green": start_sector.green_threshold,
-		"purple": start_sector.purple_threshold
-	}
+# Helper to emit signals from sequence results
+func _emit_sequence_signal(signal_name: String, signal_data):
+	# Emit the signal dynamically based on name
+	match signal_name:
+		"race_start_rolls":
+			race_start_rolls.emit(signal_data)
+		"race_start_complete":
+			pass  # No specific signal, just exit focus mode
+		_:
+			push_warning("Unknown sequence signal: " + signal_name)
 
-	# Roll twitch for all pilots (regardless of sector type)
-	# Note: We don't emit pilot_rolling/pilot_rolled during race start
-	# because we show a summary via race_start_rolls instead
-	for pilot in pilots:
-		# Get badge modifiers for race start
-		var context = {
-			"roll_type": "race_start",
-			"is_race_start": true,
-			"sector": start_sector
-		}
-		var modifiers = BadgeSystem.get_active_modifiers(pilot, context)
+# Helper to exit focus mode and resume race
+func _exit_focus_mode():
+	# Disconnect the advance callback
+	if current_focus_advance_callback.is_valid():
+		FocusMode.focus_mode_advance_requested.disconnect(current_focus_advance_callback)
 
-		# Don't emit badge activations during race start - badges are applied
-		# to the roll but we show the results in the race_start_rolls summary
+	FocusMode.deactivate()
+	race_mode = RaceMode.RUNNING
+	current_focus_sequence = null
 
-		var roll = Dice.roll_d20(pilot.twitch, "twitch", modifiers, gates, {
-			"context": "race_start",
-			"pilot": pilot.name
-		})
-		# Don't emit pilot_rolled here - we'll show summary via race_start_rolls
-		event.roll_results.append(roll)
+	# Resume the race (start first round after race start)
+	process_round()
 
-		# Calculate movement for this roll (use final_total, not tier enum!)
-		var movement = start_sector.get_movement_for_roll(roll.final_total)
-		event.movement_outcomes.append(movement)
-
-	# Sort pilots by twitch roll (highest first), ties broken by grid_position (lowest first)
-	var sorted_pilots_with_rolls = []
-	for i in range(pilots.size()):
-		sorted_pilots_with_rolls.append({
-			"pilot": pilots[i],
-			"roll": event.roll_results[i],
-			"movement": event.movement_outcomes[i]
-		})
-
-	sorted_pilots_with_rolls.sort_custom(func(a, b):
-		# First sort by roll total (descending)
-		if a.roll.final_total != b.roll.final_total:
-			return a.roll.final_total > b.roll.final_total
-		# Tie-breaker: grid position (ascending)
-		return a.pilot.grid_position < b.pilot.grid_position
-	)
-
-	# Store sorted order in metadata for movement phase
-	event.metadata["sorted_pilots"] = sorted_pilots_with_rolls
-
-	# Emit race start rolls summary now that all rolls are complete
-	var signal_data = []
-	for entry in sorted_pilots_with_rolls:
-		signal_data.append({
-			"pilot": entry.pilot,
-			"roll": entry.roll
-		})
-	race_start_rolls.emit(signal_data)
-
-	# Re-emit event to update UI with roll results
-	FocusMode.focus_mode_activated.emit(event)
-
-# Apply movement for all pilots in twitch order
-func _apply_race_start_movement(event: FocusModeManager.FocusModeEvent):
-	var sorted_pilots_with_rolls = event.metadata["sorted_pilots"]
-
-	# Process each pilot in twitch order
-	for entry in sorted_pilots_with_rolls:
-		var pilot = entry.pilot
-		var movement = entry.movement
-		var sector = current_circuit.sectors[pilot.current_sector]
-
-		# Capture state before movement
-		var start_gap = pilot.gap_in_sector
-		var start_distance = pilot.total_distance
-
-		# Check for capacity blocking during race start
-		# (no overtaking at race start, but we still need to prevent overcrowding)
-		var final_movement = check_capacity_blocking(pilot, movement, sector)
-
-		# Apply movement
-		var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
-		pilot_moved.emit(pilot, final_movement)
-
-		# Emit detailed movement info
-		var sector_completed = move_result.sectors_completed.size() > 0
-		var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
-		pilot_movement_details.emit(pilot.name, start_gap, start_distance, movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
-
-		handle_movement_results(pilot, move_result)
-
-	# Update all positions after race start
-	MoveProc.update_all_positions(pilots)
-
-	# Clear race start status for all pilots (race has now begun)
-	for pilot in pilots:
-		pilot.is_race_start = false
+# [Milestone 2] Old race start methods removed - logic moved to RaceStartSequence
 
 # Pause the race
 func pause_race():
@@ -281,6 +204,9 @@ var pilots_processed_this_round: Array = []
 
 # Current Focus Mode advance callback (to disconnect when done)
 var current_focus_advance_callback: Callable
+
+# Current focus sequence (Milestone 2: sequence extraction)
+var current_focus_sequence: FocusSequence = null
 
 # Track wheel-to-wheel pairs for the current round (persists during focus mode)
 var current_round_w2w_pairs: Array = []
