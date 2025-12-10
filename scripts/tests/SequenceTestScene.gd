@@ -29,7 +29,7 @@ func setup_test_environment():
 	"""Create a minimal test environment with circuit and pilots"""
 	# Create test circuit with 2 sectors
 	test_circuit = Circuit.new()
-	test_circuit.name = "Test Circuit"
+	test_circuit.circuit_name = "Test Circuit"
 
 	var sector1 = Sector.new()
 	sector1.sector_name = "Sector 1"
