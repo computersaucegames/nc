@@ -216,7 +216,9 @@ func create_test_circuit() -> Circuit:
 	sector2.check_type = Sector.CheckType.CRAFT
 	sector2.carrythru = 0
 
-	circuit.sectors = [sector1, sector2]
+	# Use append for typed arrays in Godot 4
+	circuit.sectors.append(sector1)
+	circuit.sectors.append(sector2)
 	return circuit
 
 # Helper: Create test pilots
