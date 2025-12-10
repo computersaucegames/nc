@@ -167,6 +167,10 @@ func _emit_sequence_signal(signal_name: String, signal_data):
 			race_start_rolls.emit(signal_data)
 		"race_start_complete":
 			pass  # No specific signal, just exit focus mode
+		"failure_table_complete":
+			pass  # Failure table already emitted in sequence
+		"red_result_complete":
+			pass  # No specific signal, just exit focus mode
 		_:
 			push_warning("Unknown sequence signal: " + signal_name)
 
@@ -178,10 +182,17 @@ func _exit_focus_mode():
 
 	FocusMode.deactivate()
 	race_mode = RaceMode.RUNNING
+
+	# Determine what to do next based on sequence type
+	var was_race_start = current_focus_sequence and current_focus_sequence.sequence_name == "RaceStart"
 	current_focus_sequence = null
 
-	# Resume the race (start first round after race start)
-	process_round()
+	if was_race_start:
+		# Start first round after race start
+		process_round()
+	else:
+		# Resume current round after focus mode
+		resume_round()
 
 # [Milestone 2] Old race start methods removed - logic moved to RaceStartSequence
 
@@ -918,135 +929,21 @@ func process_red_result_focus_mode(pilot: PilotState, sector: Sector, initial_ro
 	# Create Focus Mode event for red result
 	var event = FocusMode.create_red_result_event(pilot, sector, initial_roll)
 
+	# Create sequence
+	current_focus_sequence = RedResultSequence.new(event, self)
+
 	# Enter Focus Mode state
 	race_mode = RaceMode.FOCUS_MODE
 
 	# Connect to Focus Mode advance signal
 	current_focus_advance_callback = func():
-		_on_red_result_focus_advance(pilot, sector, initial_roll, event)
+		_advance_focus_sequence()
 	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
 
 	# Activate Focus Mode (UI will display)
 	FocusMode.activate(event)
 
-# Handle Focus Mode advancement for red result
-func _on_red_result_focus_advance(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult, event: FocusModeManager.FocusModeEvent):
-	# Check what stage we're in
-	if event.roll_results.size() == 0:
-		# Stage 1: Roll on the failure table
-		_execute_failure_table_roll(pilot, sector, initial_roll, event)
-	else:
-		# Stage 2: Apply movement and deactivate
-		_apply_red_result_movement(pilot, sector, initial_roll, event)
-
-		# Disconnect the advance callback
-		if current_focus_advance_callback.is_valid():
-			FocusMode.focus_mode_advance_requested.disconnect(current_focus_advance_callback)
-
-		FocusMode.deactivate()
-		race_mode = RaceMode.RUNNING
-
-		# Resume the current round to process remaining pilots
-		resume_round()
-
-# Execute failure table roll
-func _execute_failure_table_roll(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult, event: FocusModeManager.FocusModeEvent):
-	# Roll on the failure table
-	var failure_result = FailureTableRes.resolve_failure(pilot, sector)
-	var failure_roll = failure_result.roll_result
-	var consequence = failure_result.consequence_text
-	var penalty_gaps = failure_result.penalty_gaps
-	var badge_id = failure_result.badge_id
-
-	# Emit failure table result event
-	failure_table_triggered.emit(pilot, sector, consequence, failure_roll)
-
-	# Check if this is a crash (RED tier on failure table roll)
-	if failure_roll.tier == Dice.Tier.RED:
-		# CRASH! Pilot DNF
-		pilot.crash("Crashed", current_round)
-		event.metadata["crashed"] = true
-		event.metadata["consequence"] = consequence
-		event.metadata["initial_roll"] = initial_roll
-		event.roll_results = [failure_roll]
-		event.movement_outcomes = [0]  # No movement for crashed pilots
-
-		# Emit crash signal
-		pilot_crashed.emit(pilot, sector, consequence)
-
-		# Re-emit event to update UI with crash
-		FocusMode.focus_mode_activated.emit(event)
-		return  # Stop processing - pilot is out
-
-	# Apply negative badge based on failure roll tier (not crash)
-	# PURPLE: no badge, GREEN: -1 badge, GREY: -2 badge
-	if badge_id != "":
-		var badge_applied = FailureTableRes.apply_badge_based_on_tier(pilot, badge_id, failure_roll.tier)
-		if badge_applied:
-			# Get the actual badge that was applied (might be base or _severe version)
-			var applied_badge_id = badge_id
-			if failure_roll.tier == Dice.Tier.GREY:
-				applied_badge_id = badge_id + "_severe"
-			var badge = FailureTableRes.load_badge(applied_badge_id)
-			if badge:
-				negative_badge_applied.emit(pilot, badge)
-
-	# Store failure data in event
-	event.roll_results = [failure_roll]
-	event.metadata["consequence"] = consequence
-	event.metadata["initial_roll"] = initial_roll
-	event.metadata["penalty_gaps"] = penalty_gaps
-	if badge_id != "":
-		event.metadata["badge_id"] = badge_id
-
-	# Calculate total penalty: NEW penalty from this failure + any EXISTING pending penalty
-	var total_penalty = penalty_gaps
-	if pilot.penalty_next_turn > 0:
-		total_penalty += pilot.penalty_next_turn
-		# Log that we're applying the previous pending penalty
-		overflow_penalty_applied.emit(pilot, pilot.penalty_next_turn)
-		pilot.penalty_next_turn = 0  # Clear it since we're accounting for it now
-
-	# Calculate movement (base red_movement minus total penalty, minimum 0)
-	var base_movement = max(0, sector.red_movement - total_penalty)
-
-	# Calculate NEW overflow penalty (penalty that exceeds available movement)
-	var overflow_penalty = max(0, total_penalty - sector.red_movement)
-	if overflow_penalty > 0:
-		pilot.penalty_next_turn = overflow_penalty
-		event.metadata["overflow_penalty"] = overflow_penalty
-		# Log that penalty is being deferred to next turn
-		overflow_penalty_deferred.emit(pilot, overflow_penalty)
-
-	event.movement_outcomes = [base_movement]
-
-	# Re-emit event to update UI with failure table results
-	FocusMode.focus_mode_activated.emit(event)
-
-# Apply movement after red result and failure table shown
-func _apply_red_result_movement(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult, event: FocusModeManager.FocusModeEvent):
-	var base_movement = event.movement_outcomes[0]
-
-	# Handle overtaking
-	var final_movement = handle_overtaking(pilot, base_movement, sector)
-	# Check for capacity blocking
-	final_movement = check_capacity_blocking(pilot, final_movement, sector)
-
-	# Capture state before movement
-	var start_gap = pilot.gap_in_sector
-	var start_distance = pilot.total_distance
-
-	# Apply movement
-	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
-	pilot_moved.emit(pilot, final_movement)
-
-	# Emit detailed movement info
-	var sector_completed = move_result.sectors_completed.size() > 0
-	var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
-	pilot_movement_details.emit(pilot.name, start_gap, start_distance, final_movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
-
-	# Handle sector/lap completion
-	handle_movement_results(pilot, move_result)
+# [Milestone 2] Old red result methods removed - logic moved to RedResultSequence
 
 # Exit focus mode and continue racing
 func exit_focus_mode():
