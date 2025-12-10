@@ -76,8 +76,8 @@ func _execute_race_start_rolls(result: StageResult):
 		movement_outcomes.append(movement)
 
 		# Store in event for UI
-		event.roll_results.append(roll)
-		event.movement_outcomes.append(movement)
+		focus_event.roll_results.append(roll)
+		focus_event.movement_outcomes.append(movement)
 
 	# Sort pilots by twitch roll (highest first), ties broken by grid_position (lowest first)
 	sorted_pilots_with_rolls = []
@@ -97,7 +97,7 @@ func _execute_race_start_rolls(result: StageResult):
 	)
 
 	# Store sorted order in metadata for movement phase
-	event.metadata["sorted_pilots"] = sorted_pilots_with_rolls
+	focus_event.metadata["sorted_pilots"] = sorted_pilots_with_rolls
 
 	# Prepare signal data
 	var signal_data = []
@@ -114,11 +114,11 @@ func _execute_race_start_rolls(result: StageResult):
 	result.requires_user_input = true
 
 	# Re-emit focus mode activation to update UI with roll results
-	FocusMode.focus_mode_activated.emit(event)
+	FocusMode.focus_mode_activated.emit(focus_event)
 
 func _apply_race_start_movement():
 	# Use the sorted pilots from stage 1
-	var sorted_pilots = event.metadata.get("sorted_pilots", sorted_pilots_with_rolls)
+	var sorted_pilots = focus_event.metadata.get("sorted_pilots", sorted_pilots_with_rolls)
 
 	# Process each pilot in twitch order
 	for entry in sorted_pilots:

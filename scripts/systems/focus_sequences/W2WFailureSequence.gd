@@ -27,9 +27,9 @@ func _init(event: FocusModeManager.FocusModeEvent, simulator: RaceSimulator):
 	super._init(event)
 	sequence_name = "W2WFailure"
 	race_sim = simulator
-	pilot1 = event.pilots[0]
-	pilot2 = event.pilots[1]
-	sector = event.sector
+	pilot1 = focus_event.pilots[0]
+	pilot2 = focus_event.pilots[1]
+	sector = focus_event.sector
 
 func get_stage_count() -> int:
 	# Maximum 4 stages, but can exit early
@@ -51,7 +51,7 @@ func execute_stage(stage: int) -> StageResult:
 			_execute_w2w_rolls(result)
 
 		1:  # Failure table (only if one RED)
-			if event.metadata.get("w2w_failure", false):
+			if focus_event.metadata.get("w2w_failure", false):
 				_execute_failure_table(result)
 			else:
 				# Skip to movement
@@ -59,7 +59,7 @@ func execute_stage(stage: int) -> StageResult:
 				return execute_stage(3)
 
 		2:  # Avoidance save (only if contact triggered)
-			if event.metadata.get("contact_triggered", false):
+			if focus_event.metadata.get("contact_triggered", false):
 				_execute_avoidance_save(result)
 			else:
 				# Skip to movement
@@ -91,7 +91,7 @@ func _execute_w2w_rolls(result: StageResult):
 	race_sim.pilot_rolled.emit(pilot2, roll2)
 
 	# Store rolls in event
-	event.roll_results = [roll1, roll2]
+	focus_event.roll_results = [roll1, roll2]
 
 	# Check for RED results
 	var pilot1_red = (roll1.tier == Dice.Tier.RED)
@@ -108,11 +108,11 @@ func _execute_w2w_rolls(result: StageResult):
 		race_sim.pilot_crashed.emit(pilot2, sector, "W2W Dual Crash")
 
 		# Set event metadata
-		event.metadata["dual_crash"] = true
-		event.movement_outcomes = [0, 0]
+		focus_event.metadata["dual_crash"] = true
+		focus_event.movement_outcomes = [0, 0]
 
 		# Re-emit event to update UI
-		FocusMode.focus_mode_activated.emit(event)
+		FocusMode.focus_mode_activated.emit(focus_event)
 
 		# Exit immediately
 		result.exit_focus_mode = true
@@ -122,7 +122,7 @@ func _execute_w2w_rolls(result: StageResult):
 
 	# Handle single RED (W2W failure sequence)
 	if pilot1_red or pilot2_red:
-		event.metadata["w2w_failure"] = true
+		focus_event.metadata["w2w_failure"] = true
 		if pilot1_red:
 			failing_pilot = pilot1
 			avoiding_pilot = pilot2
@@ -130,11 +130,11 @@ func _execute_w2w_rolls(result: StageResult):
 			failing_pilot = pilot2
 			avoiding_pilot = pilot1
 
-		event.metadata["failing_pilot"] = failing_pilot
-		event.metadata["avoiding_pilot"] = avoiding_pilot
-		event.movement_outcomes = [0, 0]  # Will be calculated after failure resolution
+		focus_event.metadata["failing_pilot"] = failing_pilot
+		focus_event.metadata["avoiding_pilot"] = avoiding_pilot
+		focus_event.movement_outcomes = [0, 0]  # Will be calculated after failure resolution
 
-		FocusMode.focus_mode_activated.emit(event)
+		FocusMode.focus_mode_activated.emit(focus_event)
 
 		# Continue to failure table stage
 		result.emit_signal = "w2w_rolls_complete"
@@ -154,11 +154,11 @@ func _execute_w2w_rolls(result: StageResult):
 		movement2 = max(0, movement2 - pilot2_pending_penalty)
 		pilot2.penalty_next_turn = 0
 
-	event.movement_outcomes = [movement1, movement2]
-	event.metadata["normal_w2w"] = true
+	focus_event.movement_outcomes = [movement1, movement2]
+	focus_event.metadata["normal_w2w"] = true
 
 	# Re-emit event to update UI
-	FocusMode.focus_mode_activated.emit(event)
+	FocusMode.focus_mode_activated.emit(focus_event)
 
 	# Skip to movement stage (jump over failure and avoidance stages)
 	current_stage = 2
@@ -187,8 +187,8 @@ func _execute_failure_table(result: StageResult):
 	})
 
 	# Store failure data
-	event.metadata["failure_consequence"] = failure_consequence
-	event.metadata["failure_roll"] = failure_roll
+	focus_event.metadata["failure_consequence"] = failure_consequence
+	focus_event.metadata["failure_roll"] = failure_roll
 
 	# Emit signals
 	race_sim.w2w_failure_triggered.emit(failing_pilot, avoiding_pilot, sector)
@@ -210,7 +210,7 @@ func _execute_failure_table(result: StageResult):
 	var triggers_contact = failure_consequence.get("triggers_contact", false)
 	var contact_triggered = triggers_contact and (failure_roll.tier == Dice.Tier.RED or failure_roll.tier == Dice.Tier.GREY)
 
-	event.metadata["contact_triggered"] = contact_triggered
+	focus_event.metadata["contact_triggered"] = contact_triggered
 
 	if contact_triggered:
 		# Contact! Continue to avoidance stage
@@ -218,25 +218,25 @@ func _execute_failure_table(result: StageResult):
 	elif failure_roll.tier == Dice.Tier.RED:
 		# RED without contact - only failing pilot crashes
 		failing_pilot.crash("W2W Crash", race_sim.current_round)
-		event.metadata["failing_pilot_crashed_solo"] = true
+		focus_event.metadata["failing_pilot_crashed_solo"] = true
 		race_sim.pilot_crashed.emit(failing_pilot, sector, failure_consequence["text"])
 
 		# Avoiding pilot gets normal movement
-		var avoiding_roll = event.roll_results[1] if failing_pilot == pilot1 else event.roll_results[0]
-		event.metadata["avoiding_pilot_movement"] = race_sim.MoveProc.calculate_base_movement(sector, avoiding_roll)
-		event.metadata["failing_pilot_movement"] = 0
+		var avoiding_roll = focus_event.roll_results[1] if failing_pilot == pilot1 else focus_event.roll_results[0]
+		focus_event.metadata["avoiding_pilot_movement"] = race_sim.MoveProc.calculate_base_movement(sector, avoiding_roll)
+		focus_event.metadata["failing_pilot_movement"] = 0
 
 	# Calculate movement if not already set
-	if not event.metadata.has("failing_pilot_movement"):
+	if not focus_event.metadata.has("failing_pilot_movement"):
 		var penalty_gaps = failure_consequence.get("penalty_gaps", 0)
-		event.metadata["failing_pilot_movement"] = max(0, sector.red_movement - penalty_gaps)
+		focus_event.metadata["failing_pilot_movement"] = max(0, sector.red_movement - penalty_gaps)
 
-	if not event.metadata.has("avoiding_pilot_movement") and not contact_triggered:
-		var avoiding_roll = event.roll_results[1] if failing_pilot == pilot1 else event.roll_results[0]
-		event.metadata["avoiding_pilot_movement"] = race_sim.MoveProc.calculate_base_movement(sector, avoiding_roll)
+	if not focus_event.metadata.has("avoiding_pilot_movement") and not contact_triggered:
+		var avoiding_roll = focus_event.roll_results[1] if failing_pilot == pilot1 else focus_event.roll_results[0]
+		focus_event.metadata["avoiding_pilot_movement"] = race_sim.MoveProc.calculate_base_movement(sector, avoiding_roll)
 
 	# Re-emit event
-	FocusMode.focus_mode_activated.emit(event)
+	FocusMode.focus_mode_activated.emit(focus_event)
 
 	# Continue to next stage or skip to movement
 	if contact_triggered:
@@ -268,27 +268,27 @@ func _execute_avoidance_save(result: StageResult):
 		"context": "w2w_avoidance"
 	})
 
-	event.metadata["avoidance_result"] = avoidance_roll
+	focus_event.metadata["avoidance_result"] = avoidance_roll
 
 	# Apply consequences based on tier
 	var avoidance_description = ""
-	var avoiding_roll = event.roll_results[1] if failing_pilot == pilot1 else event.roll_results[0]
+	var avoiding_roll = focus_event.roll_results[1] if failing_pilot == pilot1 else focus_event.roll_results[0]
 	var base_movement = race_sim.MoveProc.calculate_base_movement(sector, avoiding_roll)
 
 	match avoidance_roll.tier:
 		Dice.Tier.PURPLE:
 			# Clean avoidance
-			event.metadata["avoiding_pilot_movement"] = base_movement
+			focus_event.metadata["avoiding_pilot_movement"] = base_movement
 			avoidance_description = "Clean avoidance! No penalty"
 
 		Dice.Tier.GREEN:
 			# Glancing contact - lose 1 gap
-			event.metadata["avoiding_pilot_movement"] = max(0, base_movement - 1)
+			focus_event.metadata["avoiding_pilot_movement"] = max(0, base_movement - 1)
 			avoidance_description = "Glancing contact - lose 1 Gap"
 
 		Dice.Tier.GREY:
 			# Heavy contact - lose 2 gaps + Rattled
-			event.metadata["avoiding_pilot_movement"] = max(0, base_movement - 2)
+			focus_event.metadata["avoiding_pilot_movement"] = max(0, base_movement - 2)
 			avoidance_description = "Heavy contact - lose 2 Gap + Rattled"
 
 			# Apply Rattled badge
@@ -303,21 +303,21 @@ func _execute_avoidance_save(result: StageResult):
 			failing_pilot.crash("W2W Crash", race_sim.current_round)
 			avoiding_pilot.crash("W2W Crash - failed avoidance", race_sim.current_round)
 
-			event.metadata["both_crashed"] = true
-			race_sim.pilot_crashed.emit(failing_pilot, sector, event.metadata["failure_consequence"]["text"])
+			focus_event.metadata["both_crashed"] = true
+			race_sim.pilot_crashed.emit(failing_pilot, sector, focus_event.metadata["failure_consequence"]["text"])
 			race_sim.pilot_crashed.emit(avoiding_pilot, sector, "Failed to avoid W2W crash")
 
-			event.metadata["failing_pilot_movement"] = 0
-			event.metadata["avoiding_pilot_movement"] = 0
+			focus_event.metadata["failing_pilot_movement"] = 0
+			focus_event.metadata["avoiding_pilot_movement"] = 0
 			avoidance_description = "CRASH! Failed to avoid contact"
 
-	event.metadata["avoidance_description"] = avoidance_description
+	focus_event.metadata["avoidance_description"] = avoidance_description
 
 	# Emit result signal
 	race_sim.w2w_avoidance_roll_result.emit(avoiding_pilot, avoidance_roll, avoidance_description)
 
 	# Re-emit event
-	FocusMode.focus_mode_activated.emit(event)
+	FocusMode.focus_mode_activated.emit(focus_event)
 
 	# Continue to movement
 	result.emit_signal = "w2w_avoidance_complete"
@@ -326,7 +326,7 @@ func _execute_avoidance_save(result: StageResult):
 
 func _apply_movement(result: StageResult):
 	# Handle normal W2W (no failure)
-	if event.metadata.get("normal_w2w", false):
+	if focus_event.metadata.get("normal_w2w", false):
 		_apply_normal_w2w_movement()
 		result.exit_focus_mode = true
 		result.requires_user_input = false
@@ -334,18 +334,18 @@ func _apply_movement(result: StageResult):
 		return
 
 	# Handle W2W failure cases
-	if event.metadata.get("both_crashed", false):
+	if focus_event.metadata.get("both_crashed", false):
 		# Both crashed - no movement
 		result.exit_focus_mode = true
 		result.requires_user_input = false
 		_mark_pilots_processed()
 		return
 
-	var failing_movement = event.metadata.get("failing_pilot_movement", 0)
-	var avoiding_movement = event.metadata.get("avoiding_pilot_movement", 0)
+	var failing_movement = focus_event.metadata.get("failing_pilot_movement", 0)
+	var avoiding_movement = focus_event.metadata.get("avoiding_pilot_movement", 0)
 
 	# Apply failing pilot movement (if not crashed solo)
-	if not event.metadata.get("failing_pilot_crashed_solo", false):
+	if not focus_event.metadata.get("failing_pilot_crashed_solo", false):
 		var final_failing_movement = race_sim.handle_overtaking(failing_pilot, failing_movement, sector)
 		final_failing_movement = race_sim.check_capacity_blocking(failing_pilot, final_failing_movement, sector)
 
@@ -402,8 +402,8 @@ func _apply_movement(result: StageResult):
 
 func _apply_normal_w2w_movement():
 	# Apply movement for both pilots (normal W2W, no failure)
-	var movement1 = event.movement_outcomes[0]
-	var movement2 = event.movement_outcomes[1]
+	var movement1 = focus_event.movement_outcomes[0]
+	var movement2 = focus_event.movement_outcomes[1]
 
 	# Pilot 1
 	var final_movement1 = race_sim.handle_overtaking(pilot1, movement1, sector)
