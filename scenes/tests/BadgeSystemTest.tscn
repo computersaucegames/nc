@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c9k3m5n7p2q8r"]
+
+[ext_resource type="Script" path="res://tests/test_badge_system.gd" id="1_badge_test"]
+
+[node name="BadgeSystemTest" type="Node"]
+script = ExtResource("1_badge_test")
