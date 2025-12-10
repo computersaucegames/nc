@@ -17,9 +17,9 @@ func _init(event: FocusModeManager.FocusModeEvent, simulator: RaceSimulator):
 	super._init(event)
 	sequence_name = "RedResult"
 	race_sim = simulator
-	pilot = event.pilots[0]  # Single pilot for red result
-	sector = event.sector
-	initial_roll = event.metadata.get("initial_roll")
+	pilot = focus_event.pilots[0]  # Single pilot for red result
+	sector = focus_event.sector
+	initial_roll = focus_event.metadata.get("initial_roll")
 
 func get_stage_count() -> int:
 	return 2
@@ -57,17 +57,17 @@ func _execute_failure_table_roll(result: StageResult):
 	if failure_roll.tier == Dice.Tier.RED:
 		# CRASH! Pilot DNF
 		pilot.crash("Crashed", race_sim.current_round)
-		event.metadata["crashed"] = true
-		event.metadata["consequence"] = consequence
-		event.metadata["initial_roll"] = initial_roll
-		event.roll_results = [failure_roll]
-		event.movement_outcomes = [0]  # No movement for crashed pilots
+		focus_event.metadata["crashed"] = true
+		focus_event.metadata["consequence"] = consequence
+		focus_event.metadata["initial_roll"] = initial_roll
+		focus_event.roll_results = [failure_roll]
+		focus_event.movement_outcomes = [0]  # No movement for crashed pilots
 
 		# Emit crash signal
 		race_sim.pilot_crashed.emit(pilot, sector, consequence)
 
 		# Re-emit event to update UI with crash
-		FocusMode.focus_mode_activated.emit(event)
+		FocusMode.focus_mode_activated.emit(focus_event)
 
 		# Exit immediately - pilot is out
 		result.exit_focus_mode = true
@@ -88,12 +88,12 @@ func _execute_failure_table_roll(result: StageResult):
 				race_sim.negative_badge_applied.emit(pilot, badge)
 
 	# Store failure data in event
-	event.roll_results = [failure_roll]
-	event.metadata["consequence"] = consequence
-	event.metadata["initial_roll"] = initial_roll
-	event.metadata["penalty_gaps"] = penalty_gaps
+	focus_event.roll_results = [failure_roll]
+	focus_event.metadata["consequence"] = consequence
+	focus_event.metadata["initial_roll"] = initial_roll
+	focus_event.metadata["penalty_gaps"] = penalty_gaps
 	if badge_id != "":
-		event.metadata["badge_id"] = badge_id
+		focus_event.metadata["badge_id"] = badge_id
 
 	# Calculate total penalty: NEW penalty from this failure + any EXISTING pending penalty
 	var total_penalty = penalty_gaps
@@ -110,14 +110,14 @@ func _execute_failure_table_roll(result: StageResult):
 	var overflow_penalty = max(0, total_penalty - sector.red_movement)
 	if overflow_penalty > 0:
 		pilot.penalty_next_turn = overflow_penalty
-		event.metadata["overflow_penalty"] = overflow_penalty
+		focus_event.metadata["overflow_penalty"] = overflow_penalty
 		# Log that penalty is being deferred to next turn
 		race_sim.overflow_penalty_deferred.emit(pilot, overflow_penalty)
 
-	event.movement_outcomes = [base_movement]
+	focus_event.movement_outcomes = [base_movement]
 
 	# Re-emit event to update UI with failure table results
-	FocusMode.focus_mode_activated.emit(event)
+	FocusMode.focus_mode_activated.emit(focus_event)
 
 	# Continue to movement stage
 	result.emit_signal = "failure_table_complete"

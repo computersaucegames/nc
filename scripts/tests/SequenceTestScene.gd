@@ -32,9 +32,8 @@ func setup_test_environment():
 	test_circuit.name = "Test Circuit"
 
 	var sector1 = Sector.new()
-	sector1.name = "Sector 1"
-	sector1.stat = Sector.Stat.TWITCH
-	sector1.capacity = 3
+	sector1.sector_name = "Sector 1"
+	sector1.check_type = Sector.CheckType.TWITCH
 	sector1.grey_threshold = 10
 	sector1.green_threshold = 13
 	sector1.purple_threshold = 16
@@ -44,9 +43,8 @@ func setup_test_environment():
 	sector1.red_movement = 0
 
 	var sector2 = Sector.new()
-	sector2.name = "Sector 2"
-	sector2.stat = Sector.Stat.CRAFT
-	sector2.capacity = 3
+	sector2.sector_name = "Sector 2"
+	sector2.check_type = Sector.CheckType.CRAFT
 	sector2.grey_threshold = 11
 	sector2.green_threshold = 14
 	sector2.purple_threshold = 17
@@ -91,8 +89,7 @@ func test_race_start_sequence():
 	print("  ✓ RaceStartSequence class loads")
 
 	# Create a race start event
-	var event = FocusModeManager.FocusModeEvent.new()
-	event.type = FocusModeManager.FocusModeType.RACE_START
+	var event = FocusModeManager.FocusModeEvent.new(FocusModeManager.EventType.RACE_START)
 	event.pilots = test_pilots.duplicate()
 	event.sector = test_circuit.sectors[0]
 
@@ -150,9 +147,8 @@ func test_red_result_sequence():
 	print("  ✓ RedResultSequence class loads")
 
 	# Create a red result event
-	var event = FocusModeManager.FocusModeEvent.new()
-	event.type = FocusModeManager.FocusModeType.RED_RESULT
-	event.pilot = test_pilots[0]
+	var event = FocusModeManager.FocusModeEvent.new(FocusModeManager.EventType.RED_RESULT)
+	event.pilots = [test_pilots[0]]
 	event.sector = test_circuit.sectors[0]
 
 	# Create fake initial roll
@@ -198,8 +194,7 @@ func test_w2w_failure_sequence():
 	print("  ✓ W2WFailureSequence class loads")
 
 	# Create a W2W event with two pilots
-	var event = FocusModeManager.FocusModeEvent.new()
-	event.type = FocusModeManager.FocusModeType.WHEEL_TO_WHEEL
+	var event = FocusModeManager.FocusModeEvent.new(FocusModeManager.EventType.WHEEL_TO_WHEEL_ROLL)
 	event.pilots = [test_pilots[0], test_pilots[1]]
 	event.sector = test_circuit.sectors[0]
 
