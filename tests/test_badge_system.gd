@@ -100,7 +100,8 @@ func test_badge_modifiers():
 	# Create a mock pilot resource with the badge
 	var pilot_resource = Pilot.new()
 	pilot_resource.pilot_name = "Test Pilot"
-	pilot_resource.equipped_badges = [clear_air]
+	# Use append for typed arrays in Godot 4
+	pilot_resource.equipped_badges.append(clear_air)
 	pilot.pilot_data = pilot_resource
 
 	var context = {
