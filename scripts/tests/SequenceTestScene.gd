@@ -59,7 +59,7 @@ func setup_test_environment():
 	# Create 3 test pilots
 	for i in range(3):
 		var pilot_data = Pilot.new()
-		pilot_data.name = "Pilot_%d" % (i + 1)
+		pilot_data.pilot_name = "Pilot_%d" % (i + 1)
 		pilot_data.TWITCH = 10 + i
 		pilot_data.CRAFT = 9 + i
 		pilot_data.SYNC = 8 + i
@@ -67,7 +67,7 @@ func setup_test_environment():
 
 		var pilot_state = PilotState.new()
 		pilot_state.pilot_data = pilot_data
-		pilot_state.name = pilot_data.name
+		pilot_state.name = pilot_data.pilot_name
 		pilot_state.grid_position = i + 1
 		pilot_state.current_position = i + 1
 		pilot_state.current_sector_index = 0
