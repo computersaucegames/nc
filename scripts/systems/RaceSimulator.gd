@@ -288,6 +288,19 @@ func process_pilot_turn(pilot: PilotState):
 	# Turn completed normally - RoundProcessor continues with next pilot
 
 # [Milestone 3] Old turn processing methods removed - logic moved to TurnProcessor and RoundProcessor
+# Wrapper methods for Focus Sequences (delegate to processors)
+
+# Handle overtaking for a pilot (used by focus sequences)
+func handle_overtaking(pilot: PilotState, base_movement: int, sector: Sector) -> int:
+	return turn_processor.handle_overtaking(pilot, base_movement, sector, pilots)
+
+# Check capacity blocking for a pilot (used by focus sequences)
+func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -> int:
+	return turn_processor.check_capacity_blocking(pilot, movement, sector, current_circuit, pilots)
+
+# Handle movement results for a pilot (used by focus sequences)
+func handle_movement_results(pilot: PilotState, move_result):
+	turn_processor._handle_movement_results(pilot, move_result)
 
 # End the race
 func finish_race():
