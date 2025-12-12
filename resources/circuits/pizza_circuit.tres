@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://db2vaxvslmder" path="res://scripts/resources/circuit.gd" id="1_pizza"]
 [ext_resource type="Script" uid="uid://bwoj1uted0qn4" path="res://scripts/resources/sector.gd" id="2_pizza"]
+[ext_resource type="PackedScene" uid="uid://d22ihwa0ff46w" path="res://scenes/ui/PizzaCircuitDisplay.tscn" id="3_display"]
 
 [sub_resource type="Resource" id="Resource_slice1"]
 script = ExtResource("2_pizza")
@@ -60,4 +61,5 @@ circuit_name = "Pizza Circuit"
 country = "Italy"
 total_laps = 3
 sectors = Array[ExtResource("2_pizza")]([SubResource("Resource_slice1"), SubResource("Resource_slice2"), SubResource("Resource_slice3")])
+display_scene = ExtResource("3_display")
 metadata/_custom_type_script = "uid://db2vaxvslmder"

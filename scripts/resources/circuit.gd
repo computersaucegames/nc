@@ -7,6 +7,7 @@ class_name Circuit
 @export var country: String = ""
 @export var total_laps: int = 3
 @export var sectors: Array[Sector] = []
+@export var display_scene: PackedScene = null  # The scene containing the circuit visual display
 
 func get_total_length() -> int:
 	var total: int = 0

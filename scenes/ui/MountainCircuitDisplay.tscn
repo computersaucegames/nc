@@ -1,9 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://d22ihwa0ff46w"]
+[gd_scene load_steps=4 format=3 uid="uid://mountain_display_001"]
 
 [ext_resource type="Script" uid="uid://ce4vxyse61vfk" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
-[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/pizza_triangle_placeholder.png" id="2_track"]
+[ext_resource type="Texture2D" path="res://resources/art/mountain track.png" id="2_track"]
 
-[sub_resource type="Curve2D" id="Curve2D_triangle"]
+[sub_resource type="Curve2D" id="Curve2D_mountain"]
 _data = {
 "points": PackedVector2Array(0, 0, 0, 0, 171, 103, 0, 0, 0, 0, 894, 106, 0, 0, 0, 0, 649, 443, 0, 0, 0, 0, 172, 102)
 }
@@ -25,7 +25,7 @@ scale = Vector2(3, 3)
 texture = ExtResource("2_track")
 
 [node name="TrackPath" type="Path2D" parent="."]
-curve = SubResource("Curve2D_triangle")
+curve = SubResource("Curve2D_mountain")
 
 [node name="SectorMarkers" type="Node2D" parent="."]
 
@@ -33,9 +33,24 @@ curve = SubResource("Curve2D_triangle")
 position = Vector2(173, 104)
 
 [node name="Sector2Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(888, 110)
+position = Vector2(300, 150)
 
 [node name="Sector3Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(646, 441)
+position = Vector2(450, 200)
+
+[node name="Sector4Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(600, 250)
+
+[node name="Sector5Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(750, 300)
+
+[node name="Sector6Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(700, 400)
+
+[node name="Sector7Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(550, 450)
+
+[node name="Sector8Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(400, 400)
 
 [node name="PilotContainer" type="Node2D" parent="."]

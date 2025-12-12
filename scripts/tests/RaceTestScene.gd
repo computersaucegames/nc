@@ -3,9 +3,12 @@ extends Control
 # Reference UI components from scene tree
 @onready var race_controls: RaceControls = $MarginContainer/VBoxContainer/RaceControls
 @onready var pilot_status_panel: PilotStatusPanel = $MarginContainer/VBoxContainer/ContentSplit/PilotStatusPanel
-@onready var circuit_display: CircuitDisplay = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/CircuitDisplay
+@onready var circuit_display_container: HSplitContainer = $MarginContainer/VBoxContainer/ContentSplit/RightSplit
 @onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/RaceEventLog
 @onready var focus_mode_overlay: FocusModeOverlay = $FocusModeOverlay
+
+# Circuit display (loaded dynamically based on selected circuit)
+var circuit_display: CircuitDisplay = null
 
 # Circuit selector overlay (created programmatically)
 var circuit_selector_overlay: CircuitSelectorOverlay
@@ -43,6 +46,30 @@ func show_circuit_selector():
 	# Show the circuit selector and wait for selection
 	circuit_selector_overlay.show_circuits()
 	test_circuit = await circuit_selector_overlay.circuit_selected
+	load_circuit_display()
+
+func load_circuit_display():
+	# Remove old circuit display if it exists
+	if circuit_display != null:
+		circuit_display.queue_free()
+		circuit_display = null
+
+	# Load the display scene for this circuit
+	var display_scene: PackedScene = null
+	if test_circuit.display_scene != null:
+		display_scene = test_circuit.display_scene
+	else:
+		# Fallback to pizza display if no display specified
+		display_scene = load("res://scenes/ui/PizzaCircuitDisplay.tscn")
+
+	# Instantiate and add the display
+	circuit_display = display_scene.instantiate()
+	circuit_display.layout_mode = 2
+
+	# Insert it before the RaceEventLog (so log stays on the right)
+	var log_index = race_log.get_index()
+	circuit_display_container.add_child(circuit_display)
+	circuit_display_container.move_child(circuit_display, log_index)
 
 func setup_starting_grid_overlay():
 	# Create and add starting grid overlay
