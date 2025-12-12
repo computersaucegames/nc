@@ -7,6 +7,9 @@ extends Control
 @onready var race_log: RaceEventLog = $MarginContainer/VBoxContainer/ContentSplit/RightSplit/RaceEventLog
 @onready var focus_mode_overlay: FocusModeOverlay = $FocusModeOverlay
 
+# Circuit selector overlay (created programmatically)
+var circuit_selector_overlay: CircuitSelectorOverlay
+
 # Starting grid overlay (created programmatically)
 var starting_grid_overlay: StartingGridOverlay
 
@@ -18,9 +21,10 @@ var test_circuit: Circuit
 
 func _ready():
 	setup_ui_connections()
+	setup_circuit_selector_overlay()
 	setup_starting_grid_overlay()
 	setup_race_simulator()
-	create_test_circuit()
+	await show_circuit_selector()
 	setup_test_pilots()
 
 func setup_ui_connections():
@@ -28,6 +32,17 @@ func setup_ui_connections():
 	race_controls.start_pressed.connect(_on_start_pressed)
 	race_controls.pause_pressed.connect(_on_pause_pressed)
 	race_controls.speed_changed.connect(_on_speed_changed)
+
+func setup_circuit_selector_overlay():
+	# Create and add circuit selector overlay
+	circuit_selector_overlay = CircuitSelectorOverlay.new()
+	circuit_selector_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(circuit_selector_overlay)
+
+func show_circuit_selector():
+	# Show the circuit selector and wait for selection
+	circuit_selector_overlay.show_circuits()
+	test_circuit = await circuit_selector_overlay.circuit_selected
 
 func setup_starting_grid_overlay():
 	# Create and add starting grid overlay
@@ -73,9 +88,8 @@ func setup_race_simulator():
 	race_sim.w2w_avoidance_roll_result.connect(_on_w2w_avoidance_roll_result)
 	race_sim.race_finished.connect(_on_race_finished)
 
-func create_test_circuit():
-	# Load the Pizza Circuit resource
-	test_circuit = load("res://resources/circuits/pizza_circuit.tres")
+# NOTE: Circuit is now selected via circuit_selector_overlay in show_circuit_selector()
+# The old hardcoded circuit loading has been replaced with user selection
 
 func setup_test_pilots():
 	var test_pilots = [
