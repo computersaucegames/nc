@@ -438,8 +438,6 @@ func _apply_normal_w2w_movement():
 	race_sim.handle_movement_results(pilot2, move_result2)
 
 func _mark_pilots_processed():
-	# Mark both pilots as processed this round
-	if pilot1 not in race_sim.pilots_processed_this_round:
-		race_sim.pilots_processed_this_round.append(pilot1)
-	if pilot2 not in race_sim.pilots_processed_this_round:
-		race_sim.pilots_processed_this_round.append(pilot2)
+	# [Milestone 3] RoundProcessor now handles marking pilots as processed
+	# This method is kept for backwards compatibility but does nothing
+	pass
