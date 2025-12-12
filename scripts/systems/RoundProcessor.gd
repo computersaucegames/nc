@@ -141,6 +141,10 @@ func _process_pilots_from_index(start_index: int, pilots: Array, circuit: Circui
 			var pair_key = _get_pair_key(pilot, w2w_partner)
 			processed_w2w_pairs.append(pair_key)
 
+			# Mark both pilots as individually processed (so they don't get processed again after focus mode)
+			pilots_processed_this_round.append(pilot)
+			pilots_processed_this_round.append(w2w_partner)
+
 			# Return W2W result - RaceSimulator will trigger focus mode
 			return RoundResult.needs_w2w_focus(pilot, w2w_partner)
 		else:
