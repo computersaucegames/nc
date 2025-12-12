@@ -69,8 +69,8 @@ func setup_test_environment():
 		pilot_state.pilot_data = pilot_data
 		pilot_state.name = pilot_data.pilot_name
 		pilot_state.grid_position = i + 1
-		pilot_state.current_position = i + 1
-		pilot_state.current_sector_index = 0
+		pilot_state.position = i + 1
+		pilot_state.current_sector = 0
 		pilot_state.gap_in_sector = i  # Spread out pilots
 
 		test_pilots.append(pilot_state)
