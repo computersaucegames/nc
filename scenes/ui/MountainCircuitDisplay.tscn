@@ -1,20 +1,22 @@
-[gd_scene load_steps=4 format=3 uid="uid://mountain_display_001"]
+[gd_scene load_steps=4 format=3 uid="uid://btu7q1bimnemf"]
 
 [ext_resource type="Script" uid="uid://ce4vxyse61vfk" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
-[ext_resource type="Texture2D" path="res://resources/art/mountain track.png" id="2_track"]
+[ext_resource type="Texture2D" uid="uid://44qbcen4k2u4" path="res://resources/art/mountain track.png" id="2_track"]
 
 [sub_resource type="Curve2D" id="Curve2D_mountain"]
 _data = {
-"points": PackedVector2Array(0, 0, 0, 0, 171, 103, 0, 0, 0, 0, 894, 106, 0, 0, 0, 0, 649, 443, 0, 0, 0, 0, 172, 102)
+"points": PackedVector2Array(0, 0, 0, 0, 511, 39, 34, -2, -34, 2, 325, 37, 0, 0, 0, 0, 268, 71, 0, 0, 0, 0, 251, 88, 0, 0, 0, 0, 222, 110, 0, 0, 0, 0, 223, 191, 44, -2, -44, 2, 166, 229, 0, 0, 0, 0, 145, 231, 41, -18, -41, 18, 48, 260, 0, 0, 0, 0, 21, 297, -77, 15, 77, -15, 86, 335, 0, 0, 0, 0, 146, 334, 16, -21, -16, 21, 195, 289, -28, -3, 28, 3, 225, 268, -33, 0, 33, 0, 285, 266, 0, 0, 0, 0, 312, 325, 49, -18, -49, 18, 271, 380, -14, 9, 14, -9, 141, 423, 2, -14, -2, 14, 93, 450, -52, -1, 52, 1, 184, 486, -177, 6, 177, -6, 620, 484, 0, 0, 0, 0, 893, 378, 3.77143, 18.6529, -3.77143, -18.6529, 910, 338, -19, -2, 19, 2, 885, 321, 17.4103, 12.8401, -17.4103, -12.8401, 837, 310, -4.73996, 9.21659, 4.73996, -9.21659, 823, 257, 4.73996, 12.3766, -4.73996, -12.3766, 873, 214, 19.4865, -1.84332, -19.4865, 1.84332, 848, 191, -17.1165, 3.15997, 17.1165, -3.15997, 826, 145, 1.69639, 8.90605, -1.69639, -8.90605, 877, 99, 2.96868, 15.2675, -2.96868, -15.2675, 873, 80, 53.9792, 0.81251, -53.9792, -0.81251, 808, 39, 0, 0, 0, 0, 511, 39)
 }
-point_count = 4
+point_count = 33
 
 [node name="CircuitDisplay" type="Control"]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 929.0
-offset_bottom = 500.0
+offset_left = -33.0
+offset_top = 216.0
+offset_right = 896.0
+offset_bottom = 716.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_circuit")
@@ -30,27 +32,39 @@ curve = SubResource("Curve2D_mountain")
 [node name="SectorMarkers" type="Node2D" parent="."]
 
 [node name="Sector1Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(173, 104)
+position = Vector2(510, 38)
 
 [node name="Sector2Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(300, 150)
+position = Vector2(267, 71)
 
 [node name="Sector3Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(450, 200)
+position = Vector2(167, 229)
 
 [node name="Sector4Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(600, 250)
+position = Vector2(53, 262)
 
 [node name="Sector5Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(750, 300)
+position = Vector2(82, 343)
 
 [node name="Sector6Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(700, 400)
+position = Vector2(270, 378)
 
 [node name="Sector7Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(550, 450)
+position = Vector2(139, 421)
 
 [node name="Sector8Start" type="Marker2D" parent="SectorMarkers"]
-position = Vector2(400, 400)
+position = Vector2(184, 484)
+
+[node name="Sector9Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(891, 380)
+
+[node name="Sector10Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(830, 253)
+
+[node name="Sector11Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(826, 146)
+
+[node name="Sector12Start" type="Marker2D" parent="SectorMarkers"]
+position = Vector2(792, 61)
 
 [node name="PilotContainer" type="Node2D" parent="."]
