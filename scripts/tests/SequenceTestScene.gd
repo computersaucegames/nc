@@ -158,7 +158,7 @@ func test_red_result_sequence():
 	# Create fake initial roll
 	var initial_roll = Dice.DiceResult.new()
 	initial_roll.tier = Dice.Tier.RED
-	initial_roll.total_roll = 5
+	initial_roll.final_total = 5
 	event.metadata = {"initial_roll": initial_roll}
 
 	# Create sequence instance
