@@ -7,6 +7,8 @@ const OvertakeRes = preload("res://scripts/systems/OvertakeResolver.gd")
 const MoveProc = preload("res://scripts/systems/MovementProcessor.gd")
 const StartHandler = preload("res://scripts/systems/RaceStartHandler.gd")
 const FailureTableRes = preload("res://scripts/systems/FailureTableResolver.gd")
+const TurnProc = preload("res://scripts/systems/TurnProcessor.gd")
+const RoundProc = preload("res://scripts/systems/RoundProcessor.gd")
 
 # Signals for the event-heavy system
 signal race_started(circuit: Circuit, pilots: Array)
@@ -60,12 +62,20 @@ var current_round: int = 0
 var auto_advance_timer: Timer
 var auto_advance_delay: float = 1.5  # Seconds between automatic rounds
 
+# Processors (Milestone 3)
+var turn_processor: TurnProc
+var round_processor: RoundProc
+
 func _ready():
 	# Setup timer for auto advancement
 	auto_advance_timer = Timer.new()
 	auto_advance_timer.timeout.connect(_on_auto_advance)
 	auto_advance_timer.one_shot = true
 	add_child(auto_advance_timer)
+
+	# Initialize processors (Milestone 3)
+	turn_processor = TurnProc.new(self)
+	round_processor = RoundProc.new(self)
 
 # Start a new race
 func start_race(circuit: Circuit, pilot_list: Array):
@@ -215,328 +225,81 @@ func resume_race():
 		race_mode = RaceMode.RUNNING
 		process_round()
 
-# Track W2W pairs already processed in Focus Mode this round
-var processed_w2w_pairs: Array = []
-
-# Track individual pilots who have already moved this round
-var pilots_processed_this_round: Array = []
-
 # Current Focus Mode advance callback (to disconnect when done)
 var current_focus_advance_callback: Callable
 
 # Current focus sequence (Milestone 2: sequence extraction)
 var current_focus_sequence: FocusSequence = null
 
-# Track wheel-to-wheel pairs for the current round (persists during focus mode)
-var current_round_w2w_pairs: Array = []
+# [Milestone 3] Round state tracking moved to RoundProcessor
 
-# Process a single round of racing
+# Process a single round of racing (Milestone 3: delegates to RoundProcessor)
 func process_round():
 	if race_mode != RaceMode.RUNNING:
 		return
 
 	current_round += 1
-	round_started.emit(current_round)
 
-	# Clear processed tracking for this round
-	processed_w2w_pairs.clear()
-	pilots_processed_this_round.clear()
+	# Use RoundProcessor to orchestrate the round
+	var round_result = round_processor.process_round(current_round, pilots, current_circuit)
 
-	# Update positions
-	MoveProc.update_all_positions(pilots)
+	# Handle the result
+	_handle_round_result(round_result)
 
-	# Calculate all pilot statuses
-	StatusCalc.calculate_all_statuses(pilots)
-
-	# Update badge states based on new statuses
-	BadgeSystem.update_all_badge_states(pilots)
-
-	# Check for wheel-to-wheel situations
-	current_round_w2w_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
-	for pair in current_round_w2w_pairs:
-		wheel_to_wheel_detected.emit(pair[0], pair[1])
-
-	# Check for duels (2+ consecutive rounds of W2W)
-	for pilot in pilots:
-		if pilot.is_dueling and pilot.consecutive_w2w_rounds == 2:
-			# This is the first round of the duel - emit signal
-			var partner = pilot.wheel_to_wheel_with[0] if pilot.wheel_to_wheel_with.size() > 0 else null
-			if partner != null:
-				# Only emit once per duel (check if we haven't already emitted for this pair)
-				var pair_key = _get_pair_key(pilot, partner)
-				if pair_key not in processed_w2w_pairs:  # Reuse this tracking to avoid duplicate duel signals
-					duel_started.emit(pilot, partner, pilot.consecutive_w2w_rounds)
-					processed_w2w_pairs.append(pair_key)  # Mark as emitted
-
-	# Process pilots starting from index 0
-	_process_pilots_from_index(0)
-
-# Resume processing pilots after Focus Mode
+# Resume processing pilots after Focus Mode (Milestone 3: delegates to RoundProcessor)
 func resume_round():
-	# Update positions and statuses after W2W resolution
-	MoveProc.update_all_positions(pilots)
-	StatusCalc.calculate_all_statuses(pilots)
+	# Use RoundProcessor to resume the round
+	var round_result = round_processor.resume_round(pilots, current_circuit)
 
-	# Update badge states based on new statuses
-	BadgeSystem.update_all_badge_states(pilots)
+	# Handle the result
+	_handle_round_result(round_result)
 
-	# Continue processing remaining pilots
-	_process_pilots_from_index(0)  # Will skip already-processed pilots
+# Handle round result from RoundProcessor (Milestone 3)
+func _handle_round_result(result: RoundProc.RoundResult):
+	match result.status:
+		RoundProc.RoundResult.Status.COMPLETED:
+			# Schedule next round
+			auto_advance_timer.start(auto_advance_delay)
 
-# Internal function to process pilots starting from a given index
-func _process_pilots_from_index(start_index: int):
-	# Process each pilot in position order
-	for i in range(start_index, pilots.size()):
-		var pilot = pilots[i]
+		RoundProc.RoundResult.Status.NEEDS_W2W_FOCUS:
+			# Trigger W2W focus mode
+			process_w2w_focus_mode(result.w2w_pilot1, result.w2w_pilot2)
+			# Don't schedule next round - will resume after focus mode
 
-		if race_mode != RaceMode.RUNNING:
-			return  # Exit if mode changed (Focus Mode triggered)
+		RoundProc.RoundResult.Status.RACE_FINISHED:
+			# Finish the race
+			finish_race()
 
-		if not MoveProc.can_pilot_race(pilot):
-			continue
+# [Milestone 3] Old round processing methods removed - logic moved to RoundProcessor
 
-		# Skip if this pilot already moved this round
-		if pilot in pilots_processed_this_round:
-			continue
-
-		# Check if this pilot is in a W2W situation
-		var w2w_partner = get_unprocessed_w2w_partner(pilot, current_round_w2w_pairs)
-		if w2w_partner != null:
-			# Trigger Focus Mode for this W2W pair
-			process_w2w_focus_mode(pilot, w2w_partner)
-			return  # Exit - will resume after Focus Mode completes
-		else:
-			# Normal turn processing
-			process_pilot_turn(pilot)
-			# Mark pilot as processed
-			pilots_processed_this_round.append(pilot)
-
-	# All pilots processed - check for race finish
-	if check_race_finished():
-		finish_race()
-	else:
-		# Schedule next round
-		auto_advance_timer.start(auto_advance_delay)
-
-# Process a single pilot's turn
+# Process a single pilot's turn (Milestone 3: delegates to TurnProcessor)
 func process_pilot_turn(pilot: PilotState):
 	var sector = current_circuit.sectors[pilot.current_sector]
 
-	# Emit that pilot is about to roll
-	pilot_rolling.emit(pilot, sector)
+	# Use TurnProcessor to execute the turn
+	var turn_result = turn_processor.process_turn(pilot, sector, current_circuit, current_round, pilots)
 
-	# Make the sector roll
-	var roll_result = make_pilot_roll(pilot, sector)
-	pilot_rolled.emit(pilot, roll_result)
-
-	# Check if this is a red result - trigger failure table focus mode
-	if roll_result.tier == Dice.Tier.RED:
-		process_red_result_focus_mode(pilot, sector, roll_result)
+	# Handle the result
+	if turn_result.status == TurnProc.TurnResult.Status.NEEDS_FOCUS_MODE:
+		# Red result - trigger failure table focus mode
+		process_red_result_focus_mode(pilot, sector, turn_result.initial_roll)
 		return  # Exit - will resume after focus mode
 
-	# Calculate base movement
-	var base_movement = MoveProc.calculate_base_movement(sector, roll_result)
+	# Turn completed normally - RoundProcessor continues with next pilot
 
-	# Apply overflow penalty from previous failure table (if any)
-	if pilot.penalty_next_turn > 0:
-		var penalty_applied = min(pilot.penalty_next_turn, base_movement)
-		base_movement = max(0, base_movement - pilot.penalty_next_turn)
-		# Log the penalty application
-		overflow_penalty_applied.emit(pilot, penalty_applied)
-		pilot.penalty_next_turn = 0  # Clear the penalty after applying
-
-	# Handle overtaking
-	var final_movement = handle_overtaking(pilot, base_movement, sector)
-
-	# Check for capacity blocking
-	final_movement = check_capacity_blocking(pilot, final_movement, sector)
-
-	# Capture state before movement
-	var start_gap = pilot.gap_in_sector
-	var start_distance = pilot.total_distance
-
-	# Apply movement
-	var move_result = MoveProc.apply_movement(pilot, final_movement, current_circuit)
-	pilot_moved.emit(pilot, final_movement)
-
-	# Emit detailed movement info
-	var sector_completed = move_result.sectors_completed.size() > 0
-	var momentum = move_result.momentum_gained[0] if move_result.momentum_gained.size() > 0 else 0
-	pilot_movement_details.emit(pilot.name, start_gap, start_distance, final_movement, pilot.gap_in_sector, pilot.total_distance, sector_completed, momentum)
-
-	# Handle sector/lap completion
-	handle_movement_results(pilot, move_result)
-
-# Make a dice roll for a pilot
-func make_pilot_roll(pilot: PilotState, sector: Sector) -> Dice.DiceResult:
-	var stat_value = pilot.get_stat(sector.check_type)  # This works fine now!
-	var modifiers = []
-
-	# Apply poor start disadvantage if applicable
-	if pilot.has_poor_start and current_round == 1:
-		modifiers.append(Dice.create_disadvantage("Poor Start"))
-		pilot.has_poor_start = false
-
-	# Add modifiers from badges
-	var context = {
-		"roll_type": "movement",
-		"sector": sector,
-		"round": current_round
-	}
-	var badge_mods = BadgeSystem.get_active_modifiers(pilot, context)
-	modifiers.append_array(badge_mods)
-
-	# Emit badge activation events
-	var active_badges = BadgeSystem.get_active_badges_info(pilot, context)
-	for badge_info in active_badges:
-		badge_activated.emit(pilot, badge_info["name"], badge_info["effect"])
-	
-	var gates = {
-		"grey": sector.grey_threshold,
-		"green": sector.green_threshold,
-		"purple": sector.purple_threshold
-	}
-
-	# DEBUG: Log the gates and sector info
-	print("DEBUG make_pilot_roll: %s rolling on %s" % [pilot.name, sector.sector_name])
-	print("  Gates: grey=%d, green=%d, purple=%d" % [gates["grey"], gates["green"], gates["purple"]])
-
-	# Convert enum to string for the dice display/logging
-	var check_name = sector.get_check_type_string()  # "twitch", "craft", etc.
-	
-	return Dice.roll_d20(stat_value, check_name, modifiers, gates, {
-		"pilot": pilot.name,
-		"sector": sector.sector_name,
-		"status": pilot.get_status_string()
-	})
-
-# Handle overtaking attempts and return adjusted movement
-func handle_overtaking(pilot: PilotState, base_movement: int, sector: Sector) -> int:
-	var overtake_attempts = OvertakeRes.check_potential_overtakes(pilot, base_movement, pilots)
-	
-	if overtake_attempts.size() == 0:
-		return base_movement
-	
-	# Process the overtake chain
-	var overtake_chain = OvertakeRes.process_overtake_chain(
-		pilot, base_movement, overtake_attempts, sector
-	)
-	
-	# Emit events for each overtake attempt
-	for attempt_result in overtake_chain["results"]:
-		var defender = attempt_result["defender"]
-		var result_obj = attempt_result["result"]
-		
-		overtake_detected.emit(pilot, defender)
-		overtake_attempt.emit(pilot, defender, result_obj.attacker_roll, result_obj.defender_roll)
-		
-		if result_obj.success:
-			overtake_completed.emit(pilot, defender)
-		else:
-			overtake_blocked.emit(pilot, defender)
-	
-	return overtake_chain["final_movement"]
-
-# Check if the target position has reached capacity (max fins side-by-side)
-# If blocked, reduce movement to stay one gap behind the blocking fins
-func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector) -> int:
-	if movement <= 0:
-		return movement
-
-	# Calculate actual destination using MovementProcessor logic (handles sector boundaries)
-	var destination = MoveProc.calculate_destination_position(pilot, movement, current_circuit)
-	var target_sector_idx = destination["sector"]
-	var target_gap = destination["gap"]
-	var target_sector = current_circuit.sectors[target_sector_idx]
-
-	# Count how many other pilots are already at this exact position
-	var pilots_at_target = []
-	for other in pilots:
-		if other == pilot or other.finished or other.did_not_finish:
-			continue
-
-		# Check if other pilot is at the target position
-		if other.current_sector == target_sector_idx and other.gap_in_sector == target_gap:
-			pilots_at_target.append(other)
-
-	# If we've reached capacity, block this pilot from moving into that position
-	if pilots_at_target.size() >= target_sector.max_side_by_side:
-		# Recursively reduce movement until we find a valid position
-		var adjusted_movement = check_capacity_blocking(pilot, movement - 1, sector)
-
-		# Emit signal that this pilot was blocked by capacity
-		capacity_blocked.emit(pilot, pilots_at_target, movement, adjusted_movement)
-		return adjusted_movement
-
-	return movement
-
-# Handle the results of movement (sectors, laps, finishing)
-func handle_movement_results(pilot: PilotState, move_result):
-	# Emit events for completed sectors
-	for i in range(move_result.sectors_completed.size()):
-		var completed_sector = move_result.sectors_completed[i]
-		var momentum = move_result.momentum_gained[i] if i < move_result.momentum_gained.size() else 0
-		sector_completed.emit(pilot, completed_sector, momentum)
-	
-	# Handle lap completion
-	if move_result.lap_completed:
-		lap_completed.emit(pilot, move_result.new_lap_number)
-	
-	# Handle race finish for this pilot
-	if move_result.race_finished:
-		handle_pilot_finish(pilot)
-
-# Handle a pilot finishing the race
-func handle_pilot_finish(pilot: PilotState):
-	# Count finish position
-	var finish_position = 1
-	for other in pilots:
-		if other.finished and other != pilot:
-			finish_position += 1
-
-	pilot.finish_race(finish_position, current_round)
-	pilot_finished.emit(pilot, finish_position)
-
-# Check if all pilots have finished or DNF'd
-func check_race_finished() -> bool:
-	for pilot in pilots:
-		if not pilot.finished and not pilot.did_not_finish:
-			return false
-	return true
+# [Milestone 3] Old turn processing methods removed - logic moved to TurnProcessor and RoundProcessor
 
 # End the race
 func finish_race():
 	race_mode = RaceMode.FINISHED
 	auto_advance_timer.stop()
-	
+
 	var final_positions = MoveProc.get_finish_order(pilots)
 	race_finished.emit(final_positions)
 
-# Get W2W partner if not already processed
-func get_unprocessed_w2w_partner(pilot: PilotState, w2w_pairs: Array):
-	for pair in w2w_pairs:
-		if pair[0] == pilot or pair[1] == pilot:
-			# Check if this pair was already processed
-			var pair_key = _get_pair_key(pair[0], pair[1])
-			if pair_key not in processed_w2w_pairs:
-				# Get the partner
-				var partner = pair[1] if pair[0] == pilot else pair[0]
-				# Make sure partner hasn't been processed individually either
-				if partner not in pilots_processed_this_round:
-					return partner
-	return null
-
-# Generate unique key for a pilot pair
-func _get_pair_key(pilot1: PilotState, pilot2: PilotState) -> String:
-	var names = [pilot1.name, pilot2.name]
-	names.sort()
-	return names[0] + "_" + names[1]
-
 # Process wheel-to-wheel situation in Focus Mode
 func process_w2w_focus_mode(pilot1: PilotState, pilot2: PilotState):
-	# Mark this pair as processed
-	var pair_key = _get_pair_key(pilot1, pilot2)
-	processed_w2w_pairs.append(pair_key)
+	# RoundProcessor already marked this pair as processed
 
 	# Get the sector for both pilots (should be same)
 	var sector = current_circuit.sectors[pilot1.current_sector]
