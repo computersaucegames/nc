@@ -79,6 +79,10 @@ func setup_test_environment():
 	race_sim = RaceSimulator.new()
 	add_child(race_sim)
 
+	# Assign circuit and pilots to race simulator
+	race_sim.current_circuit = test_circuit
+	race_sim.pilots = test_pilots.duplicate()
+
 ## Test 1: RaceStartSequence
 func test_race_start_sequence():
 	print("TEST 1: RaceStartSequence...")
