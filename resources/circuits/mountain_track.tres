@@ -1,13 +1,13 @@
-[gd_resource type="Resource" script_class="Circuit" load_steps=6 format=3 uid="uid://pizza_circuit_001"]
+[gd_resource type="Resource" script_class="Circuit" load_steps=7 format=3 uid="uid://mountain_track_001"]
 
-[ext_resource type="Script" uid="uid://db2vaxvslmder" path="res://scripts/resources/circuit.gd" id="1_pizza"]
-[ext_resource type="Script" uid="uid://bwoj1uted0qn4" path="res://scripts/resources/sector.gd" id="2_pizza"]
-[ext_resource type="PackedScene" uid="uid://d22ihwa0ff46w" path="res://scenes/ui/PizzaCircuitDisplay.tscn" id="3_display"]
+[ext_resource type="Script" uid="uid://db2vaxvslmder" path="res://scripts/resources/circuit.gd" id="1_mountain"]
+[ext_resource type="Script" uid="uid://bwoj1uted0qn4" path="res://scripts/resources/sector.gd" id="2_mountain"]
+[ext_resource type="PackedScene" uid="uid://mountain_display_001" path="res://scenes/ui/MountainCircuitDisplay.tscn" id="3_display"]
 
-[sub_resource type="Resource" id="Resource_slice1"]
-script = ExtResource("2_pizza")
-sector_name = "Crust Corner"
-length_in_gap = 6
+[sub_resource type="Resource" id="Resource_sector1"]
+script = ExtResource("2_mountain")
+sector_name = "Summit Approach"
+length_in_gap = 8
 carrythru = 0
 check_type = 0
 is_start_sector = true
@@ -21,9 +21,9 @@ purple_movement = 4
 failure_table = Array[String](["Understeer wide - lose 1 Gap", "Overheat tires - lose 2 Gap [badge:rattled]", "Minor slide - no penalty"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
-[sub_resource type="Resource" id="Resource_slice2"]
-script = ExtResource("2_pizza")
-sector_name = "Cheese Chase"
+[sub_resource type="Resource" id="Resource_sector2"]
+script = ExtResource("2_mountain")
+sector_name = "Peak Hairpin"
 length_in_gap = 6
 carrythru = 2
 check_type = 1
@@ -38,10 +38,10 @@ purple_movement = 4
 failure_table = Array[String](["Lock brakes - lose 1 Gap", "Miss apex - lose 2 Gap [badge:sloppy_technique]", "Scrub speed - no penalty"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
-[sub_resource type="Resource" id="Resource_slice3"]
-script = ExtResource("2_pizza")
-sector_name = "Sauce Straight"
-length_in_gap = 6
+[sub_resource type="Resource" id="Resource_sector3"]
+script = ExtResource("2_mountain")
+sector_name = "Mountain Descent"
+length_in_gap = 7
 carrythru = 4
 check_type = 3
 is_start_sector = false
@@ -56,10 +56,10 @@ failure_table = Array[String](["Clip wall - lose 1 Gap [badge:shaky_brakes]", "B
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [resource]
-script = ExtResource("1_pizza")
-circuit_name = "Pizza Circuit"
-country = "Italy"
+script = ExtResource("1_mountain")
+circuit_name = "Mountain Circuit"
+country = "Switzerland"
 total_laps = 3
-sectors = Array[ExtResource("2_pizza")]([SubResource("Resource_slice1"), SubResource("Resource_slice2"), SubResource("Resource_slice3")])
+sectors = Array[ExtResource("2_mountain")]([SubResource("Resource_sector1"), SubResource("Resource_sector2"), SubResource("Resource_sector3")])
 display_scene = ExtResource("3_display")
 metadata/_custom_type_script = "uid://db2vaxvslmder"
