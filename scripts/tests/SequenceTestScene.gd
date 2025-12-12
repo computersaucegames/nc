@@ -134,7 +134,7 @@ func test_race_start_sequence():
 	# Verify pilots have moved
 	var moved_pilots = 0
 	for pilot in test_pilots:
-		if pilot.distance_traveled > 0:
+		if pilot.total_distance > 0:
 			moved_pilots += 1
 	assert(moved_pilots > 0, "At least one pilot should have moved")
 	print("  ✓ Pilots moved after sequence")
