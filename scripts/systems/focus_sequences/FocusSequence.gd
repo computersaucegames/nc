@@ -24,8 +24,8 @@ class StageResult extends RefCounted:
 	## Signal name to emit (optional)
 	var emit_signal: String = ""
 
-	## Data to include with the signal
-	var signal_data: Dictionary = {}
+	## Data to include with the signal (can be Array or Dictionary)
+	var signal_data = null
 
 	## Whether this stage requires user input to advance
 	var requires_user_input: bool = true
