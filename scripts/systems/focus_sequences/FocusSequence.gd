@@ -106,6 +106,10 @@ func advance() -> StageResult:
 			completed = true
 			result.continue_sequence = false
 			result.exit_focus_mode = true
+	else:
+		# If we're exiting or not continuing, check if we were on the last stage
+		if current_stage >= get_stage_count() - 1:
+			completed = true
 
 	return result
 
