@@ -290,6 +290,10 @@ func process_pilot_turn(pilot: PilotState):
 # [Milestone 3] Old turn processing methods removed - logic moved to TurnProcessor and RoundProcessor
 # Wrapper methods for Focus Sequences (delegate to processors)
 
+# Make a dice roll for a pilot (used by focus sequences)
+func make_pilot_roll(pilot: PilotState, sector: Sector) -> Dice.DiceResult:
+	return turn_processor.make_roll(pilot, sector, current_round)
+
 # Handle overtaking for a pilot (used by focus sequences)
 func handle_overtaking(pilot: PilotState, base_movement: int, sector: Sector) -> int:
 	return turn_processor.handle_overtaking(pilot, base_movement, sector, pilots)
