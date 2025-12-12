@@ -16,10 +16,10 @@ func _ready():
 
 	setup_test_environment()
 
-	# Run tests for each sequence (will be uncommented as we create them)
+	# Run tests for each sequence
 	test_race_start_sequence()
-	# test_red_result_sequence()  # Uncomment after creating RedResultSequence
-	# test_w2w_failure_sequence()  # Uncomment after creating W2WFailureSequence
+	test_red_result_sequence()
+	test_w2w_failure_sequence()
 
 	print("\n=== ALL SEQUENCE TESTS COMPLETE ===\n")
 	# Auto-quit after tests (for CI)
@@ -40,7 +40,7 @@ func setup_test_environment():
 	sector1.grey_movement = 1
 	sector1.green_movement = 2
 	sector1.purple_movement = 3
-	sector1.red_movement = 0
+	sector1.red_movement = 1  # Give some movement for red results
 
 	var sector2 = Sector.new()
 	sector2.sector_name = "Sector 2"
@@ -51,7 +51,7 @@ func setup_test_environment():
 	sector2.grey_movement = 1
 	sector2.green_movement = 2
 	sector2.purple_movement = 3
-	sector2.red_movement = 0
+	sector2.red_movement = 1  # Give some movement for red results
 
 	test_circuit.sectors.append(sector1)
 	test_circuit.sectors.append(sector2)
@@ -175,7 +175,7 @@ func test_red_result_sequence():
 	assert(result1 != null, "Stage 1 should return result")
 	# Note: might exit early if pilot crashes
 	if not result1.exit_focus_mode:
-		assert(result1.emit_signal == "failure_table_triggered", "Should emit failure_table_triggered")
+		assert(result1.emit_signal == "failure_table_complete", "Should emit failure_table_complete")
 		print("  ✓ Stage 1 (failure table) executes correctly")
 
 		# Execute stage 2 (movement) only if didn't crash
