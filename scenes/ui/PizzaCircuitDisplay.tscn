@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://d22ihwa0ff46w"]
 
 [ext_resource type="Script" uid="uid://ce4vxyse61vfk" path="res://scripts/ui/CircuitDisplay.gd" id="1_circuit"]
-[ext_resource type="Texture2D" uid="uid://mjsuo7xkgrar" path="res://resources/art/pizza_triangle_placeholder.png" id="2_track"]
+[ext_resource type="Texture2D" path="res://resources/art/mountain track.png" id="2_track"]
 
 [sub_resource type="Curve2D" id="Curve2D_triangle"]
 _data = {
