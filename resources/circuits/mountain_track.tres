@@ -251,4 +251,5 @@ country = ""
 total_laps = 3
 sectors = Array[ExtResource("2_xu5y8")]([SubResource("Resource_ciur4"), SubResource("Resource_xu5y8"), SubResource("Resource_barr0"), SubResource("Resource_bdqwg"), SubResource("Resource_pno2k"), SubResource("Resource_mx33o"), SubResource("Resource_jwkt6"), SubResource("Resource_qiu2a"), SubResource("Resource_sec9"), SubResource("Resource_sec10"), SubResource("Resource_sec11"), SubResource("Resource_sec12")])
 display_scene = ExtResource("3_display")
+runs_counter_clockwise = true
 metadata/_custom_type_script = "uid://db2vaxvslmder"

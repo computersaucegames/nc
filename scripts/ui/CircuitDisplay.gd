@@ -266,8 +266,10 @@ func _apply_overlap_offsets():
 			if icon:
 				# Calculate perpendicular direction to the track
 				# PathFollow2D.rotation gives us the tangent angle
-				# Add 90 degrees (PI/2) to get the perpendicular
-				var perpendicular_angle = path_follow.rotation + PI / 2
+				# Add 90 degrees (PI/2) for clockwise circuits (fins on left)
+				# Subtract 90 degrees (-PI/2) for counter-clockwise circuits (fins on right)
+				var angle_offset = -PI / 2 if circuit.runs_counter_clockwise else PI / 2
+				var perpendicular_angle = path_follow.rotation + angle_offset
 				var perpendicular_dir = Vector2(cos(perpendicular_angle), sin(perpendicular_angle))
 
 				# Apply offset along the perpendicular direction
