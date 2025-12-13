@@ -104,6 +104,7 @@ func setup_race_simulator():
 	race_sim.focus_mode_triggered.connect(_on_focus_mode)
 	race_sim.failure_table_triggered.connect(_on_failure_table)
 	race_sim.negative_badge_applied.connect(_on_negative_badge_applied)
+	race_sim.badge_earned.connect(_on_badge_earned)
 	race_sim.pilot_crashed.connect(_on_pilot_crashed)
 	race_sim.overflow_penalty_deferred.connect(_on_overflow_penalty_deferred)
 	race_sim.overflow_penalty_applied.connect(_on_overflow_penalty_applied)
@@ -290,6 +291,9 @@ func _on_failure_table(pilot: PilotState, sector: Sector, consequence: String, r
 
 func _on_negative_badge_applied(pilot: PilotState, badge: Badge):
 	race_log.log_negative_badge_applied(pilot.name, badge.badge_name, badge.description)
+
+func _on_badge_earned(pilot: PilotState, badge: Badge):
+	race_log.log_badge_earned(pilot.name, badge.badge_name, badge.description)
 
 func _on_pilot_crashed(pilot: PilotState, sector: Sector, reason: String):
 	race_log.log_pilot_crashed(pilot.name, sector.sector_name, reason)
