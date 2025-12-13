@@ -118,7 +118,7 @@ func process_turn(pilot: PilotState, sector: Sector, circuit: Circuit, current_r
 	)
 
 	# Handle sector/lap completion
-	_handle_movement_results(pilot, sector, roll_result, move_result)
+	_handle_movement_results(pilot, move_result, sector, roll_result)
 
 	return TurnResult.completed(pilot, roll_result, final_movement, move_result)
 
@@ -226,15 +226,16 @@ func check_capacity_blocking(pilot: PilotState, movement: int, sector: Sector, c
 	return movement
 
 ## Handle the results of movement (sectors, laps, finishing)
-func _handle_movement_results(pilot: PilotState, sector: Sector, roll_result: Dice.DiceResult, move_result):
+## sector and roll_result are optional - only needed for badge tracking during normal sector rolls
+func _handle_movement_results(pilot: PilotState, move_result, sector: Sector = null, roll_result: Dice.DiceResult = null):
 	# Emit events for completed sectors
 	for i in range(move_result.sectors_completed.size()):
 		var completed_sector = move_result.sectors_completed[i]
 		var momentum = move_result.momentum_gained[i] if i < move_result.momentum_gained.size() else 0
 		race_sim.sector_completed.emit(pilot, completed_sector, momentum)
 
-		# Track sector completion for badge earning (only if it's the sector that was just rolled)
-		if completed_sector == sector:
+		# Track sector completion for badge earning (only if we have sector and roll_result)
+		if sector != null and roll_result != null and completed_sector == sector:
 			BadgeSystem.track_sector_completion(pilot, completed_sector, roll_result)
 			# Check if any badges should be awarded
 			if not circuit.available_sector_badges.is_empty():
