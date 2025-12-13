@@ -238,8 +238,8 @@ func _handle_movement_results(pilot: PilotState, move_result, sector: Sector = n
 		if sector != null and roll_result != null and completed_sector == sector:
 			BadgeSystem.track_sector_completion(pilot, completed_sector, roll_result)
 			# Check if any badges should be awarded
-			if not circuit.available_sector_badges.is_empty():
-				var earned_badges = BadgeSystem.check_and_award_sector_badges(pilot, circuit.available_sector_badges)
+			if not race_sim.current_circuit.available_sector_badges.is_empty():
+				var earned_badges = BadgeSystem.check_and_award_sector_badges(pilot, race_sim.current_circuit.available_sector_badges)
 				# Emit signal for each earned badge
 				for badge in earned_badges:
 					race_sim.badge_earned.emit(pilot, badge)
