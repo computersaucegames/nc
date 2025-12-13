@@ -19,6 +19,7 @@ class_name CircuitDisplay
 var circuit: Circuit
 var pilot_markers: Dictionary = {}  # pilot_id -> PathFollow2D
 var pilot_tweens: Dictionary = {}   # pilot_id -> Tween (for smooth animation)
+var pilot_previous_progress: Dictionary = {}  # pilot_id -> float (last progress_ratio, for lap wrap detection)
 var total_circuit_length: int = 0
 
 # Pilot icon scene to instantiate (can be customized)
@@ -88,11 +89,12 @@ func _generate_default_path():
 func setup_pilots(pilot_data: Array):
 	print("DEBUG: Setting up %d pilots" % pilot_data.size())
 
-	# Clear existing markers and tweens
+	# Clear existing markers, tweens, and progress tracking
 	for marker in pilot_markers.values():
 		marker.queue_free()
 	pilot_markers.clear()
 	pilot_tweens.clear()
+	pilot_previous_progress.clear()
 
 	# Create a PathFollow2D for each pilot
 	for p_idx in range(pilot_data.size()):
@@ -164,16 +166,29 @@ func update_pilot_position(pilot_id: int, current_lap: int, current_sector: int,
 	# Update the PathFollow2D position with smooth animation
 	var path_follow: PathFollow2D = pilot_markers[pilot_id]
 
+	# Detect lap wrapping: if progress jumps from high (>0.5) to low (<0.5) by a large amount (>0.5)
+	# This indicates crossing the start/finish line to begin a new lap
+	var previous_progress = pilot_previous_progress.get(pilot_id, progress_ratio)
+	var is_lap_wrap = (previous_progress > 0.5 and progress_ratio < 0.5 and (previous_progress - progress_ratio) > 0.5)
+
 	# Kill existing tween if running to avoid conflicts
 	if pilot_tweens.has(pilot_id) and pilot_tweens[pilot_id]:
 		pilot_tweens[pilot_id].kill()
 
-	# Create smooth tween animation to new position
-	var tween = create_tween()
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(path_follow, "progress_ratio", progress_ratio, MOVEMENT_ANIMATION_DURATION)
-	pilot_tweens[pilot_id] = tween
+	if is_lap_wrap:
+		# Lap transition detected - update position instantly to avoid backwards animation
+		path_follow.progress_ratio = progress_ratio
+		print("DEBUG: Pilot %d LAP WRAP - Instant update from %.2f to %.2f" % [pilot_id, previous_progress, progress_ratio])
+	else:
+		# Normal movement - use smooth tween animation
+		var tween = create_tween()
+		tween.set_ease(Tween.EASE_IN_OUT)
+		tween.set_trans(Tween.TRANS_QUAD)
+		tween.tween_property(path_follow, "progress_ratio", progress_ratio, MOVEMENT_ANIMATION_DURATION)
+		pilot_tweens[pilot_id] = tween
+
+	# Store current progress for next update
+	pilot_previous_progress[pilot_id] = progress_ratio
 
 	print("DEBUG: Pilot %d - Sector: %d, Gap: %d, Progress: %.2f (Total gap: %d/%d)" %
 		[pilot_id, current_sector, gap_in_sector, progress_ratio, progress_gap, total_circuit_length])
