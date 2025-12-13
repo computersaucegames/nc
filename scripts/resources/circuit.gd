@@ -9,6 +9,7 @@ class_name Circuit
 @export var sectors: Array[Sector] = []
 @export var display_scene: PackedScene = null  # The scene containing the circuit visual display
 @export var runs_counter_clockwise: bool = false  # If true, circuit runs counter-clockwise
+@export var available_sector_badges: Array[Badge] = []  # Badges that can be earned on this circuit
 
 func get_total_length() -> int:
 	var total: int = 0

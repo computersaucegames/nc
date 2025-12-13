@@ -44,6 +44,11 @@ enum CheckType {
 @export_group("W2W Failure Table")
 @export var w2w_failure_table_override: Array[Dictionary] = []
 
+# Optional: Tags for sector-specific badge tracking
+# Examples: "climb", "descent", "hairpin", "technical", "straight"
+@export_group("Sector Tags")
+@export var sector_tags: Array[String] = []
+
 func get_movement_for_roll(roll_value: int) -> int:
 	if roll_value < grey_threshold:
 		return red_movement

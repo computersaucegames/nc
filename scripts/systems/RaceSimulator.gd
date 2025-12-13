@@ -33,6 +33,7 @@ signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: S
 signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
 signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
 signal badge_activated(pilot: PilotState, badge_name: String, effect_description: String)
+signal badge_earned(pilot: PilotState, badge: Badge)  # When a pilot earns a sector-based badge
 signal negative_badge_applied(pilot: PilotState, badge: Badge)
 signal pilot_crashed(pilot: PilotState, sector: Sector, reason: String)
 signal w2w_failure_triggered(failing_pilot: PilotState, other_pilot: PilotState, sector: Sector)
