@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="Circuit" load_steps=15 format=3 uid="uid://bd6f43thayj62"]
+[gd_resource type="Resource" script_class="Circuit" load_steps=16 format=3 uid="uid://bd6f43thayj62"]
 
 [ext_resource type="Script" uid="uid://db2vaxvslmder" path="res://scripts/resources/circuit.gd" id="1_ciur4"]
 [ext_resource type="Script" uid="uid://bwoj1uted0qn4" path="res://scripts/resources/sector.gd" id="2_xu5y8"]
 [ext_resource type="PackedScene" uid="uid://mountain_display_001" path="res://scenes/ui/MountainCircuitDisplay.tscn" id="3_display"]
+[ext_resource type="Resource" path="res://resources/badges/mountain_goat.tres" id="4_badge_mgoat"]
 
 [sub_resource type="Resource" id="Resource_ciur4"]
 script = ExtResource("2_xu5y8")
@@ -22,6 +23,7 @@ purple_movement = 4
 failure_table = Array[String](["Wobbly launch - ride height unstable, lose 1 Gap", "Poor positioning off the line - lose 1 Gap", "Clean launch - no penalty"])
 failure_table_check_type = 0
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["straight"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_xu5y8"]
@@ -42,6 +44,7 @@ purple_movement = 4
 failure_table = Array[String](["Late on the brakes - scrub speed into Narrow Pass, lose 1 Gap", "Pushed wide in the battle - lose 1 Gap", "Aggressive but clean - no penalty"])
 failure_table_check_type = 3
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["braking_zone"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_barr0"]
@@ -62,6 +65,7 @@ purple_movement = 4
 failure_table = Array[String](["Scrape the rock wall - ride height bounces, lose 2 Gap", "Clip the outer barrier - straighten up, lose 1 Gap", "Thread the needle perfectly - no penalty"])
 failure_table_check_type = 1
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_bdqwg"]
@@ -82,6 +86,7 @@ purple_movement = 4
 failure_table = Array[String](["CRASH! Slam into inside barrier - DNF", "Slide off the mountain edge - DNF", "Run wide - lose control of ride height, lose 3 Gap", "Overshoot apex - scrub massive speed, lose 2 Gap", "Tight but sketchy - lose 1 Gap", "Perfect hairpin - no penalty"])
 failure_table_check_type = 3
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["hairpin", "dangerous", "descent"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_pno2k"]
@@ -102,6 +107,7 @@ purple_movement = 4
 failure_table = Array[String](["Struggle with elevation change - ride height sags, lose 2 Gap", "Poor exit positioning - lose 1 Gap", "Smooth transition uphill - no penalty"])
 failure_table_check_type = 1
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["climb"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_mx33o"]
@@ -122,6 +128,7 @@ purple_movement = 4
 failure_table = Array[String](["Misjudge braking point - too hot into Summit Apex, lose 2 Gap", "Brake too early - momentum bleeds away, lose 1 Gap", "Perfect timing on the brakes - no penalty"])
 failure_table_check_type = 2
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["climb", "braking_zone"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_jwkt6"]
@@ -142,6 +149,7 @@ purple_movement = 4
 failure_table = Array[String](["Apex too aggressive - ride height slams ground, lose 2 Gap", "Wide exit - scrub speed onto straight, lose 1 Gap", "Precision apex - no penalty"])
 failure_table_check_type = 1
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["hairpin", "technical"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_qiu2a"]
@@ -162,6 +170,7 @@ purple_movement = 4
 failure_table = Array[String](["Gravity pulls you low - scrape the ground, lose 1 Gap", "Turbulence in the draft - unstable, lose 1 Gap", "Clean run down the mountain - no penalty"])
 failure_table_check_type = 0
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["straight", "descent", "overtaking"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec9"]
@@ -182,6 +191,7 @@ purple_movement = 4
 failure_table = Array[String](["Lose the rhythm - overcorrect ride height, lose 2 Gap", "Tight line but scrubbing - lose 1 Gap", "Flow through smoothly - no penalty"])
 failure_table_check_type = 1
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical", "esses"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec10"]
@@ -202,6 +212,7 @@ purple_movement = 4
 failure_table = Array[String](["Timing off - compression upsets balance, lose 2 Gap", "Slight bobble - lose momentum, lose 1 Gap", "Perfect rhythm maintained - no penalty"])
 failure_table_check_type = 2
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical", "esses"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec11"]
@@ -222,6 +233,7 @@ purple_movement = 4
 failure_table = Array[String](["Aggressive exit goes wrong - ride height spikes, lose 2 Gap", "Conservative exit - scrub speed, lose 1 Gap", "Nailed the exit - no penalty"])
 failure_table_check_type = 3
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical", "esses"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec12"]
@@ -242,6 +254,7 @@ purple_movement = 4
 failure_table = Array[String](["Downhill plunge - lose ride height control, lose 2 Gap", "Pushed wide in late-lap battle - lose 1 Gap", "Dive down the mountain cleanly - no penalty"])
 failure_table_check_type = 0
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["descent", "straight"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [resource]
@@ -252,4 +265,5 @@ total_laps = 3
 sectors = Array[ExtResource("2_xu5y8")]([SubResource("Resource_ciur4"), SubResource("Resource_xu5y8"), SubResource("Resource_barr0"), SubResource("Resource_bdqwg"), SubResource("Resource_pno2k"), SubResource("Resource_mx33o"), SubResource("Resource_jwkt6"), SubResource("Resource_qiu2a"), SubResource("Resource_sec9"), SubResource("Resource_sec10"), SubResource("Resource_sec11"), SubResource("Resource_sec12")])
 display_scene = ExtResource("3_display")
 runs_counter_clockwise = true
+available_sector_badges = Array[Badge]([ExtResource("4_badge_mgoat")])
 metadata/_custom_type_script = "uid://db2vaxvslmder"

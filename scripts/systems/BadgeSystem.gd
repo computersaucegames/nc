@@ -144,3 +144,79 @@ static func get_active_badges_debug(pilot_state, context: Dictionary) -> String:
 			]
 
 	return debug_text
+
+## Track sector completion for badge earning
+## Call this when a sector is completed with the roll result
+static func track_sector_completion(pilot_state, sector: Sector, roll_result: Dice.DiceResult) -> void:
+	# Get the result tier
+	var result_tier = sector.get_result_type(roll_result.final_total)
+
+	# Check each sector tag on this sector
+	for tag in sector.sector_tags:
+		var tag_key = "sector_tag_%s" % tag
+
+		# Initialize tracking dictionary for this tag if needed
+		if not pilot_state.badge_states.has(tag_key):
+			pilot_state.badge_states[tag_key] = {
+				"green_plus_count": 0,
+				"purple_count": 0
+			}
+
+		var tag_state = pilot_state.badge_states[tag_key]
+
+		# Increment counters based on result
+		if result_tier == "PURPLE":
+			tag_state["purple_count"] += 1
+			tag_state["green_plus_count"] += 1  # Purple counts as green+
+		elif result_tier == "GREEN":
+			tag_state["green_plus_count"] += 1
+
+## Check if any badges should be awarded based on sector performance
+## Returns array of badge resources that were earned
+static func check_and_award_sector_badges(pilot_state, available_badges: Array[Badge]) -> Array[Badge]:
+	var earned_badges: Array[Badge] = []
+
+	for badge in available_badges:
+		if badge == null:
+			continue
+
+		# Skip if this badge doesn't track sector tags
+		if badge.earned_by_sector_tag == "":
+			continue
+
+		# Skip if pilot already has this badge (equipped or temporary)
+		if _pilot_has_badge(pilot_state, badge):
+			continue
+
+		# Check if requirements are met
+		var tag_key = "sector_tag_%s" % badge.earned_by_sector_tag
+		var tag_state = pilot_state.badge_states.get(tag_key, {})
+
+		var green_plus_count = tag_state.get("green_plus_count", 0)
+		var purple_count = tag_state.get("purple_count", 0)
+
+		var green_requirement_met = (badge.requires_green_plus_count == 0 or green_plus_count >= badge.requires_green_plus_count)
+		var purple_requirement_met = (badge.requires_purple_count == 0 or purple_count >= badge.requires_purple_count)
+
+		if green_requirement_met and purple_requirement_met:
+			# Award the badge!
+			pilot_state.temporary_badges.append(badge)
+			earned_badges.append(badge)
+
+	return earned_badges
+
+## Check if pilot already has a badge (equipped or temporary)
+static func _pilot_has_badge(pilot_state, badge: Badge) -> bool:
+	# Check temporary badges
+	for temp_badge in pilot_state.temporary_badges:
+		if temp_badge == badge or temp_badge.badge_id == badge.badge_id:
+			return true
+
+	# Check equipped badges
+	if pilot_state.pilot_data:
+		if pilot_state.pilot_data is Pilot:
+			for equipped_badge in pilot_state.pilot_data.equipped_badges:
+				if equipped_badge == badge or equipped_badge.badge_id == badge.badge_id:
+					return true
+
+	return false
