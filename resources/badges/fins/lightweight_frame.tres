@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="Badge" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/badge.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+badge_id = "fin_lightweight_frame"
+badge_name = "Lightweight Frame"
+description = "+1 to all movement rolls"
+permanence = 2
+trigger_on_race_start = false
+trigger_on_race_end = false
+trigger_on_attacking = false
+trigger_on_defending = false
+trigger_on_clear_air = false
+trigger_on_wheel_to_wheel = false
+trigger_on_dueling = false
+trigger_on_in_train = false
+trigger_on_leading = false
+trigger_on_last_place = false
+trigger_on_top_3 = false
+trigger_on_twitch_sectors = false
+trigger_on_craft_sectors = false
+trigger_on_sync_sectors = false
+trigger_on_edge_sectors = false
+requires_consecutive_rounds = 0
+state_property = ""
+modifier_type = 0
+modifier_value = 1
+affects_movement_rolls = true
+affects_overtaking_rolls = false
+affects_defending_rolls = false
+affects_w2w_rolls = false
+affects_start_rolls = false

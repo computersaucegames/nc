@@ -136,10 +136,16 @@ func make_roll(pilot: PilotState, sector: Sector, current_round: int) -> Dice.Di
 	var context = {
 		"roll_type": "movement",
 		"sector": sector,
-		"round": current_round
+		"round": current_round,
+		"pilot": pilot  # Needed for fin badges to check pilot status
 	}
 	var badge_mods = BadgeSystem.get_active_modifiers(pilot, context)
 	modifiers.append_array(badge_mods)
+
+	# Add modifiers from fin badges (if pilot has a fin assigned)
+	if pilot.fin_state != null:
+		var fin_badge_mods = BadgeSystem.get_active_modifiers_for_fin(pilot.fin_state, context)
+		modifiers.append_array(fin_badge_mods)
 
 	# Emit badge activation events
 	var active_badges = BadgeSystem.get_active_badges_info(pilot, context)
@@ -243,6 +249,16 @@ func _handle_movement_results(pilot: PilotState, move_result, sector: Sector = n
 				# Emit signal for each earned badge
 				for badge in earned_badges:
 					race_sim.badge_earned.emit(pilot, badge)
+
+			# Track sector completion for fin badge earning (if pilot has a fin)
+			if pilot.fin_state != null:
+				BadgeSystem.track_fin_sector_completion(pilot.fin_state, completed_sector, roll_result)
+				# Check if any fin badges should be awarded
+				if not race_sim.current_circuit.available_sector_badges.is_empty():
+					var earned_fin_badges = BadgeSystem.check_and_award_fin_sector_badges(pilot.fin_state, race_sim.current_circuit.available_sector_badges)
+					# Emit signal for each earned fin badge
+					for badge in earned_fin_badges:
+						race_sim.badge_earned.emit(pilot, badge)  # Still emit under pilot's name for UI
 
 	# Handle lap completion
 	if move_result.lap_completed:

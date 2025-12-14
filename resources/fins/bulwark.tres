@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Fin" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/fin.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+fin_name = "Bulwark"
+fin_model = "BW-440"
+fin_bio = "Built like a tank with reinforced hull plating and advanced stability systems. Can take a beating and keep racing, though it's not winning any acceleration contests."
+THRUST = 5
+FORM = 8
+RESPONSE = 5
+SYNC = 6
+equipped_badges = Array[Resource]([])

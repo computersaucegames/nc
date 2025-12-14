@@ -8,6 +8,9 @@ var pilot_id: int = 0  # Index in the pilots array (for UI tracking)
 var name: String = "Unknown"
 var headshot: String = ""  # Path to pilot headshot image
 
+# Fin data (the craft this pilot is controlling)
+var fin_state: FinState = null
+
 # Race position data
 var current_sector: int = 0
 var gap_in_sector: int = 0
@@ -121,6 +124,11 @@ func setup_from_pilot_resource(pilot_resource: Pilot, start_position: int = 1, h
 	craft = pilot_resource.CRAFT
 	sync = pilot_resource.SYNC
 	edge = pilot_resource.EDGE
+
+# Assign a fin to this pilot
+func setup_fin(fin_resource: Fin) -> void:
+	fin_state = FinState.new()
+	fin_state.setup_from_fin_resource(fin_resource)
 
 # Initialize from dictionary (for easy setup - legacy support)
 func setup_from_dict(data: Dictionary, start_position: int = 1) -> void:
