@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Fin" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/fin.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+fin_name = "Thunderbolt"
+fin_model = "TB-900"
+fin_bio = "Raw power incarnate. Overtuned thrusters provide devastating acceleration and top speed, but the heavy engine systems make it less nimble in tight corners."
+THRUST = 8
+FORM = 6
+RESPONSE = 5
+SYNC = 6
+equipped_badges = Array[Resource]([])

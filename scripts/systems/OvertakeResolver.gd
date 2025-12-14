@@ -115,14 +115,28 @@ static func process_overtake_chain(
 		var excess_gap = attempt["excess_gap"]
 
 		# Get badge modifiers for attacker and defender
-		var attacker_badge_mods = BadgeSystem.get_active_modifiers(attacker, {
+		var attacker_context = {
 			"roll_type": "overtaking",
-			"sector": sector
-		})
-		var defender_badge_mods = BadgeSystem.get_active_modifiers(defender, {
+			"sector": sector,
+			"pilot": attacker
+		}
+		var defender_context = {
 			"roll_type": "defending",
-			"sector": sector
-		})
+			"sector": sector,
+			"pilot": defender
+		}
+
+		var attacker_badge_mods = BadgeSystem.get_active_modifiers(attacker, attacker_context)
+		var defender_badge_mods = BadgeSystem.get_active_modifiers(defender, defender_context)
+
+		# Add fin badge modifiers if fins are assigned
+		if attacker.fin_state != null:
+			var attacker_fin_mods = BadgeSystem.get_active_modifiers_for_fin(attacker.fin_state, attacker_context)
+			attacker_badge_mods.append_array(attacker_fin_mods)
+
+		if defender.fin_state != null:
+			var defender_fin_mods = BadgeSystem.get_active_modifiers_for_fin(defender.fin_state, defender_context)
+			defender_badge_mods.append_array(defender_fin_mods)
 
 		# Resolve the overtake
 		var result = resolve_overtake(attacker, defender, sector, excess_gap, attacker_badge_mods, defender_badge_mods)
