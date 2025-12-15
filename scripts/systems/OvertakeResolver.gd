@@ -71,7 +71,15 @@ static func resolve_overtake(
 	var check_type = sector.check_type  # This is now a Sector.CheckType enum
 	var attacker_stat = attacker.get_stat(check_type)  # Pass enum directly
 	var defender_stat = defender.get_stat(check_type)  # Pass enum directly
-	
+
+	# Add fin stats if sector requires it
+	if sector.fin_stat_type != Sector.FinStatType.NONE:
+		var fin_stat_name = _get_fin_stat_name(sector.fin_stat_type)
+		if attacker.fin_state != null:
+			attacker_stat += attacker.fin_state.get_stat(fin_stat_name)
+		if defender.fin_state != null:
+			defender_stat += defender.fin_state.get_stat(fin_stat_name)
+
 	# Get the string representation for display/logging
 	var stat_name = sector.get_check_type_string()  # "twitch", "craft", etc.
 	
@@ -163,3 +171,17 @@ static func describe_overtake_situation(attacker, defender, excess_gap: int) -> 
 	return "%s attempting to pass %s with %d Gap momentum advantage" % [
 		attacker.name, defender.name, excess_gap
 	]
+
+# Helper to convert fin stat type enum to string
+static func _get_fin_stat_name(fin_stat_type: Sector.FinStatType) -> String:
+	match fin_stat_type:
+		Sector.FinStatType.THRUST:
+			return "THRUST"
+		Sector.FinStatType.FORM:
+			return "FORM"
+		Sector.FinStatType.RESPONSE:
+			return "RESPONSE"
+		Sector.FinStatType.SYNC:
+			return "SYNC"
+		_:
+			return ""

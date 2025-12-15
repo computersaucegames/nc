@@ -10,10 +10,20 @@ enum CheckType {
 	EDGE
 }
 
+# Define fin stat types for combined pilot+fin checks
+enum FinStatType {
+	NONE,      # No fin stat (legacy sectors - pilot stat only)
+	THRUST,    # Fin thrust stat
+	FORM,      # Fin form stat
+	RESPONSE,  # Fin response stat
+	SYNC       # Fin sync stat
+}
+
 @export var sector_name: String = "Unnamed Sector"
 @export var length_in_gap: int = 5  # Total distance of this sector
 @export var carrythru: int = 2  # Max excess Gap that can transfer to next sector
 @export var check_type: CheckType = CheckType.EDGE
+@export var fin_stat_type: FinStatType = FinStatType.NONE  # Optional fin stat for combined checks
 @export var is_start_sector: bool = false  # Is this where the race starts?
 @export var max_side_by_side: int = 2  # Maximum number of fins that can race wheel-to-wheel
 
