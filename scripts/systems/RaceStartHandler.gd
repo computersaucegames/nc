@@ -43,22 +43,45 @@ static func form_starting_grid(pilots: Array, circuit: Circuit) -> void:
 # Execute launch procedure for all pilots
 static func execute_launch_procedure(pilots: Array) -> Array:
 	var results = []
-	
+
 	for pilot in pilots:
 		var start_result = StartResult.new()
 		start_result.pilot = pilot
-		
-		# Roll for launch reaction
-		start_result.roll = Dice.roll_d20(pilot.twitch, "twitch", [], {}, {
+
+		# Calculate stat value: pilot twitch + fin response (if fin equipped)
+		var stat_value = pilot.twitch
+		if pilot.fin_state != null:
+			var fin_response = pilot.fin_state.get_stat("RESPONSE")
+			stat_value += fin_response
+
+		# Collect modifiers
+		var modifiers = []
+
+		# Add modifiers from pilot badges
+		var context = {
+			"roll_type": "race_start",
+			"context": "race_start",
+			"pilot": pilot
+		}
+		var badge_mods = BadgeSystem.get_active_modifiers(pilot, context)
+		modifiers.append_array(badge_mods)
+
+		# Add modifiers from fin badges (if pilot has a fin)
+		if pilot.fin_state != null:
+			var fin_badge_mods = BadgeSystem.get_active_modifiers_for_fin(pilot.fin_state, context)
+			modifiers.append_array(fin_badge_mods)
+
+		# Roll for launch reaction with combined stats and modifiers
+		start_result.roll = Dice.roll_d20(stat_value, "twitch", modifiers, {}, {
 			"context": "race_start",
 			"pilot": pilot.name
 		})
-		
+
 		# Apply effects based on roll
 		start_result.effects = _apply_launch_effects(pilot, start_result.roll)
-		
+
 		results.append(start_result)
-	
+
 	return results
 
 # Apply effects from launch roll

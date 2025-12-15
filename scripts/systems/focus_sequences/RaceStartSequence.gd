@@ -56,16 +56,28 @@ func _execute_race_start_rolls(result: StageResult):
 
 	# Roll twitch for all pilots
 	for pilot in all_pilots:
+		# Calculate stat value: pilot twitch + fin response (if fin equipped)
+		var stat_value = pilot.twitch
+		if pilot.fin_state != null:
+			var fin_response = pilot.fin_state.get_stat("RESPONSE")
+			stat_value += fin_response
+
 		# Get badge modifiers for race start
 		var context = {
 			"roll_type": "race_start",
 			"is_race_start": true,
-			"sector": start_sector
+			"sector": start_sector,
+			"pilot": pilot
 		}
 		var modifiers = BadgeSystem.get_active_modifiers(pilot, context)
 
-		# Roll TWITCH for race start (always uses twitch, regardless of sector stat)
-		var roll = Dice.roll_d20(pilot.twitch, "twitch", modifiers, gates, {
+		# Add modifiers from fin badges (if pilot has a fin)
+		if pilot.fin_state != null:
+			var fin_badge_mods = BadgeSystem.get_active_modifiers_for_fin(pilot.fin_state, context)
+			modifiers.append_array(fin_badge_mods)
+
+		# Roll TWITCH+RESPONSE for race start (combined pilot+fin stats)
+		var roll = Dice.roll_d20(stat_value, "twitch", modifiers, gates, {
 			"context": "race_start",
 			"pilot": pilot.name
 		})
