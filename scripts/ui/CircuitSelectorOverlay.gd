@@ -56,9 +56,10 @@ func show_circuits():
 	if pizza_circuit:
 		circuits.append(pizza_circuit)
 
-	# Add test circuits from CircuitLoader
-	var test_circuits = CircuitLoader.get_test_circuits()
-	circuits.append_array(test_circuits)
+	# Add mountain circuit
+	var mountain_circuit = load("res://resources/circuits/mountain_track.tres") as Circuit
+	if mountain_circuit:
+		circuits.append(mountain_circuit)
 
 	# Display each circuit
 	for circuit in circuits:

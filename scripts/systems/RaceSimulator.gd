@@ -33,6 +33,7 @@ signal failure_table_triggered(pilot: PilotState, sector: Sector, consequence: S
 signal overflow_penalty_applied(pilot: PilotState, penalty_gaps: int)
 signal overflow_penalty_deferred(pilot: PilotState, penalty_gaps: int)
 signal badge_activated(pilot: PilotState, badge_name: String, effect_description: String)
+signal badge_earned(pilot: PilotState, badge: Badge)  # When a pilot earns a sector-based badge
 signal negative_badge_applied(pilot: PilotState, badge: Badge)
 signal pilot_crashed(pilot: PilotState, sector: Sector, reason: String)
 signal w2w_failure_triggered(failing_pilot: PilotState, other_pilot: PilotState, sector: Sector)
@@ -92,10 +93,15 @@ func start_race(circuit: Circuit, pilot_list: Array):
 		# Handle different pilot data formats
 		var pilot_data = pilot_list[i]
 		if pilot_data is Dictionary and pilot_data.has("pilot"):
-			# New format: {"pilot": Pilot resource, "headshot": "path"}
+			# New format: {"pilot": Pilot resource, "headshot": "path", "fin": Fin resource (optional)}
 			var pilot_resource = pilot_data["pilot"]
 			var headshot = pilot_data.get("headshot", "")
 			pilot_state.setup_from_pilot_resource(pilot_resource, i + 1, headshot)
+
+			# Assign fin if provided
+			if pilot_data.has("fin") and pilot_data["fin"] != null:
+				var fin_resource = pilot_data["fin"]
+				pilot_state.setup_fin(fin_resource)
 		elif pilot_data is Pilot:
 			# Direct Pilot resource (no headshot)
 			pilot_state.setup_from_pilot_resource(pilot_data, i + 1, "")
@@ -122,6 +128,11 @@ func start_race(circuit: Circuit, pilot_list: Array):
 
 	# Initialize badge states for all pilots
 	BadgeSystem.reset_all_badge_states(pilots)
+
+	# Initialize badge states for all fins
+	for pilot in pilots:
+		if pilot.fin_state != null:
+			BadgeSystem.reset_fin_badge_states(pilot.fin_state)
 
 	race_started.emit(current_circuit, pilots)
 

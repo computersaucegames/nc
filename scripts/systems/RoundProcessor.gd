@@ -80,6 +80,11 @@ func process_round(round_number: int, pilots: Array, circuit: Circuit) -> RoundR
 	# Update badge states based on new statuses
 	BadgeSystem.update_all_badge_states(pilots)
 
+	# Update fin badge states
+	for pilot in pilots:
+		if pilot.fin_state != null:
+			BadgeSystem.update_fin_badge_states(pilot.fin_state, pilot)
+
 	# Check for wheel-to-wheel situations
 	current_round_w2w_pairs = StatusCalc.get_wheel_to_wheel_pairs(pilots)
 	for pair in current_round_w2w_pairs:
@@ -99,6 +104,11 @@ func resume_round(pilots: Array, circuit: Circuit) -> RoundResult:
 
 	# Update badge states based on new statuses
 	BadgeSystem.update_all_badge_states(pilots)
+
+	# Update fin badge states
+	for pilot in pilots:
+		if pilot.fin_state != null:
+			BadgeSystem.update_fin_badge_states(pilot.fin_state, pilot)
 
 	# Continue processing remaining pilots
 	return _process_pilots_from_index(0, pilots, circuit)  # Will skip already-processed pilots

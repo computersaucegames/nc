@@ -46,6 +46,14 @@ enum Permanence {
 @export var trigger_on_sync_sectors: bool = false
 @export var trigger_on_edge_sectors: bool = false
 
+# Sector tag trigger condition
+@export var trigger_on_sector_tag: String = ""  # Activate when in sectors with this tag (e.g., "climb", "descent")
+
+# Sector tag-based conditions (for earning badges, not triggering them)
+@export var earned_by_sector_tag: String = ""  # Track sectors with this tag (e.g., "climb", "descent")
+@export var requires_green_plus_count: int = 0  # How many green+ results needed in tagged sectors
+@export var requires_purple_count: int = 0  # How many purple results needed in tagged sectors
+
 # State-based conditions
 @export var requires_consecutive_rounds: int = 0  # 0 = no requirement, N = must be in condition for N rounds
 @export var state_property: String = ""  # Which state to track (e.g., "consecutive_attacking_rounds")
@@ -106,6 +114,11 @@ func should_activate(pilot_state, context: Dictionary) -> bool:
 				Sector.CheckType.EDGE:
 					sector_matches = trigger_on_edge_sectors
 			if not sector_matches:
+				return false
+
+		# Check sector tag condition
+		if trigger_on_sector_tag != "":
+			if not sector.sector_tags.has(trigger_on_sector_tag):
 				return false
 
 	# Check consecutive rounds requirement

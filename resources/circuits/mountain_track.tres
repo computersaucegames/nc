@@ -1,17 +1,18 @@
-[gd_resource type="Resource" script_class="Circuit" load_steps=11 format=3 uid="uid://bd6f43thayj62"]
+[gd_resource type="Resource" script_class="Circuit" load_steps=16 format=3 uid="uid://bd6f43thayj62"]
 
 [ext_resource type="Script" uid="uid://db2vaxvslmder" path="res://scripts/resources/circuit.gd" id="1_ciur4"]
 [ext_resource type="Script" uid="uid://bwoj1uted0qn4" path="res://scripts/resources/sector.gd" id="2_xu5y8"]
 [ext_resource type="PackedScene" uid="uid://mountain_display_001" path="res://scenes/ui/MountainCircuitDisplay.tscn" id="3_display"]
+[ext_resource type="Resource" path="res://resources/badges/mountain_goat.tres" id="4_badge_mgoat"]
 
 [sub_resource type="Resource" id="Resource_ciur4"]
 script = ExtResource("2_xu5y8")
-sector_name = "DIve to turn 1"
-length_in_gap = 5
-carrythru = 1
-check_type = 3
-is_start_sector = false
-max_side_by_side = 2
+sector_name = "Launch Straight"
+length_in_gap = 6
+carrythru = 3
+check_type = 0
+is_start_sector = true
+max_side_by_side = 3
 grey_threshold = 5
 green_threshold = 10
 purple_threshold = 15
@@ -19,19 +20,20 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
-failure_table_check_type = 3
+failure_table = Array[String](["Wobbly launch - ride height unstable, lose 1 Gap", "Poor positioning off the line - lose 1 Gap", "Clean launch - no penalty"])
+failure_table_check_type = 0
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["straight"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_xu5y8"]
 script = ExtResource("2_xu5y8")
-sector_name = "Downhill esses Sector"
-length_in_gap = 6
-carrythru = 4
-check_type = 1
+sector_name = "Opening Run"
+length_in_gap = 7
+carrythru = 0
+check_type = 3
 is_start_sector = false
-max_side_by_side = 2
+max_side_by_side = 3
 grey_threshold = 5
 green_threshold = 10
 purple_threshold = 15
@@ -39,17 +41,18 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
+failure_table = Array[String](["Late on the brakes - scrub speed into Narrow Pass, lose 1 Gap", "Pushed wide in the battle - lose 1 Gap", "Aggressive but clean - no penalty"])
 failure_table_check_type = 3
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["braking_zone"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_barr0"]
 script = ExtResource("2_xu5y8")
 sector_name = "Narrow Pass"
 length_in_gap = 4
-carrythru = 0
-check_type = 3
+carrythru = 1
+check_type = 1
 is_start_sector = false
 max_side_by_side = 1
 grey_threshold = 5
@@ -59,16 +62,80 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
-failure_table_check_type = 3
+failure_table = Array[String](["Scrape the rock wall - ride height bounces, lose 2 Gap", "Clip the outer barrier - straighten up, lose 1 Gap", "Thread the needle perfectly - no penalty"])
+failure_table_check_type = 1
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_bdqwg"]
 script = ExtResource("2_xu5y8")
-sector_name = "Mountain Hairpin Sector"
+sector_name = "Mountain Drop"
 length_in_gap = 5
+carrythru = 1
+check_type = 3
+is_start_sector = false
+max_side_by_side = 1
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["CRASH! Slam into inside barrier - DNF", "Slide off the mountain edge - DNF", "Run wide - lose control of ride height, lose 3 Gap", "Overshoot apex - scrub massive speed, lose 2 Gap", "Tight but sketchy - lose 1 Gap", "Perfect hairpin - no penalty"])
+failure_table_check_type = 3
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["hairpin", "dangerous", "descent"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_pno2k"]
+script = ExtResource("2_xu5y8")
+sector_name = "Midfield Climb"
+length_in_gap = 6
 carrythru = 2
+check_type = 1
+is_start_sector = false
+max_side_by_side = 2
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Struggle with elevation change - ride height sags, lose 2 Gap", "Poor exit positioning - lose 1 Gap", "Smooth transition uphill - no penalty"])
+failure_table_check_type = 1
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["climb"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_mx33o"]
+script = ExtResource("2_xu5y8")
+sector_name = "Summit Approach"
+length_in_gap = 5
+carrythru = 0
+check_type = 2
+is_start_sector = false
+max_side_by_side = 2
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Misjudge braking point - too hot into Summit Apex, lose 2 Gap", "Brake too early - momentum bleeds away, lose 1 Gap", "Perfect timing on the brakes - no penalty"])
+failure_table_check_type = 2
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["climb", "braking_zone"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_jwkt6"]
+script = ExtResource("2_xu5y8")
+sector_name = "Summit Apex"
+length_in_gap = 4
+carrythru = 1
 check_type = 1
 is_start_sector = false
 max_side_by_side = 1
@@ -79,77 +146,18 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
-failure_table_check_type = 3
+failure_table = Array[String](["Apex too aggressive - ride height slams ground, lose 2 Gap", "Wide exit - scrub speed onto straight, lose 1 Gap", "Precision apex - no penalty"])
+failure_table_check_type = 1
 w2w_failure_table_override = Array[Dictionary]([])
-metadata/_custom_type_script = "uid://bwoj1uted0qn4"
-
-[sub_resource type="Resource" id="Resource_pno2k"]
-script = ExtResource("2_xu5y8")
-sector_name = "Downslope"
-length_in_gap = 8
-carrythru = 2
-check_type = 1
-is_start_sector = false
-max_side_by_side = 2
-grey_threshold = 5
-green_threshold = 10
-purple_threshold = 15
-red_movement = 1
-grey_movement = 2
-green_movement = 3
-purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
-failure_table_check_type = 3
-w2w_failure_table_override = Array[Dictionary]([])
-metadata/_custom_type_script = "uid://bwoj1uted0qn4"
-
-[sub_resource type="Resource" id="Resource_mx33o"]
-script = ExtResource("2_xu5y8")
-sector_name = "Short Straight"
-length_in_gap = 4
-carrythru = 0
-check_type = 0
-is_start_sector = false
-max_side_by_side = 2
-grey_threshold = 5
-green_threshold = 10
-purple_threshold = 15
-red_movement = 1
-grey_movement = 2
-green_movement = 3
-purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
-failure_table_check_type = 3
-w2w_failure_table_override = Array[Dictionary]([])
-metadata/_custom_type_script = "uid://bwoj1uted0qn4"
-
-[sub_resource type="Resource" id="Resource_jwkt6"]
-script = ExtResource("2_xu5y8")
-sector_name = "The Point"
-length_in_gap = 5
-carrythru = 2
-check_type = 3
-is_start_sector = false
-max_side_by_side = 2
-grey_threshold = 5
-green_threshold = 10
-purple_threshold = 15
-red_movement = 1
-grey_movement = 2
-green_movement = 3
-purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
-failure_table_check_type = 3
-w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["hairpin", "technical"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_qiu2a"]
 script = ExtResource("2_xu5y8")
-sector_name = "Backside"
+sector_name = "Downhill Straight"
 length_in_gap = 15
-carrythru = 1
-check_type = 1
+carrythru = 3
+check_type = 0
 is_start_sector = false
 max_side_by_side = 4
 grey_threshold = 5
@@ -159,9 +167,94 @@ red_movement = 1
 grey_movement = 2
 green_movement = 3
 purple_movement = 4
-failure_table = Array[String](["Spin out - lose 1 Gap", "Lock up brakes - lose 2 Gap", "Wide line - no penalty"])
+failure_table = Array[String](["Gravity pulls you low - scrape the ground, lose 1 Gap", "Turbulence in the draft - unstable, lose 1 Gap", "Clean run down the mountain - no penalty"])
+failure_table_check_type = 0
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["straight", "descent", "overtaking"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_sec9"]
+script = ExtResource("2_xu5y8")
+sector_name = "Lower Esses Entry"
+length_in_gap = 5
+carrythru = 2
+check_type = 1
+is_start_sector = false
+max_side_by_side = 2
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Lose the rhythm - overcorrect ride height, lose 2 Gap", "Tight line but scrubbing - lose 1 Gap", "Flow through smoothly - no penalty"])
+failure_table_check_type = 1
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical", "esses"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_sec10"]
+script = ExtResource("2_xu5y8")
+sector_name = "Mid Esses"
+length_in_gap = 5
+carrythru = 2
+check_type = 2
+is_start_sector = false
+max_side_by_side = 2
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Timing off - compression upsets balance, lose 2 Gap", "Slight bobble - lose momentum, lose 1 Gap", "Perfect rhythm maintained - no penalty"])
+failure_table_check_type = 2
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical", "esses"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_sec11"]
+script = ExtResource("2_xu5y8")
+sector_name = "Upper Esses Exit"
+length_in_gap = 4
+carrythru = 2
+check_type = 3
+is_start_sector = false
+max_side_by_side = 2
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Aggressive exit goes wrong - ride height spikes, lose 2 Gap", "Conservative exit - scrub speed, lose 1 Gap", "Nailed the exit - no penalty"])
 failure_table_check_type = 3
 w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["technical", "esses"])
+metadata/_custom_type_script = "uid://bwoj1uted0qn4"
+
+[sub_resource type="Resource" id="Resource_sec12"]
+script = ExtResource("2_xu5y8")
+sector_name = "Final Descent"
+length_in_gap = 7
+carrythru = 3
+check_type = 0
+is_start_sector = false
+max_side_by_side = 3
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Downhill plunge - lose ride height control, lose 2 Gap", "Pushed wide in late-lap battle - lose 1 Gap", "Dive down the mountain cleanly - no penalty"])
+failure_table_check_type = 0
+w2w_failure_table_override = Array[Dictionary]([])
+sector_tags = Array[String](["descent", "straight"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [resource]
@@ -169,6 +262,8 @@ script = ExtResource("1_ciur4")
 circuit_name = "Mountain Circuit"
 country = ""
 total_laps = 3
-sectors = Array[ExtResource("2_xu5y8")]([SubResource("Resource_ciur4"), SubResource("Resource_xu5y8"), SubResource("Resource_barr0"), SubResource("Resource_bdqwg"), SubResource("Resource_pno2k"), SubResource("Resource_mx33o"), SubResource("Resource_jwkt6"), SubResource("Resource_qiu2a")])
+sectors = Array[ExtResource("2_xu5y8")]([SubResource("Resource_ciur4"), SubResource("Resource_xu5y8"), SubResource("Resource_barr0"), SubResource("Resource_bdqwg"), SubResource("Resource_pno2k"), SubResource("Resource_mx33o"), SubResource("Resource_jwkt6"), SubResource("Resource_qiu2a"), SubResource("Resource_sec9"), SubResource("Resource_sec10"), SubResource("Resource_sec11"), SubResource("Resource_sec12")])
 display_scene = ExtResource("3_display")
+runs_counter_clockwise = true
+available_sector_badges = Array[Badge]([ExtResource("4_badge_mgoat")])
 metadata/_custom_type_script = "uid://db2vaxvslmder"

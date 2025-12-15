@@ -232,6 +232,12 @@ func log_negative_badge_applied(pilot_name: String, badge_name: String, badge_de
 		pilot_name, badge_name, badge_description
 	])
 
+func log_badge_earned(pilot_name: String, badge_name: String, badge_description: String):
+	output_log.append_text("[b][color=gold]🏆 BADGE EARNED! [b]%s[/b] earned: [b]%s[/b][/color][/b]\n" % [
+		pilot_name, badge_name
+	])
+	output_log.append_text("    [color=cyan]%s[/color]\n\n" % badge_description)
+
 func log_pilot_crashed(pilot_name: String, sector_name: String, reason: String):
 	output_log.append_text("[b][color=red]💥 CRASH! [b]%s[/b] has CRASHED at %s![/color][/b]\n" % [
 		pilot_name, sector_name

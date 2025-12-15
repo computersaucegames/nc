@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Fin" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/fin.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+fin_name = "Scalpel"
+fin_model = "SC-850"
+fin_bio = "Precision-engineered for technical perfection. Superior response systems and neural feedback make this craft dance through complex sectors with surgical precision."
+THRUST = 5
+FORM = 6
+RESPONSE = 8
+SYNC = 7
+equipped_badges = Array[Resource]([])

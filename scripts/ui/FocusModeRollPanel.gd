@@ -69,6 +69,12 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 	var check_type = sector.failure_table_check_type if event_type == 5 else sector.check_type
 	var check_type_str = _get_check_type_string(check_type)
 	var sector_text = "Sector: %s (%s)" % [sector.sector_name, check_type_str.to_upper()]
+
+	# Add sector tags if present
+	if not sector.sector_tags.is_empty():
+		var tags_str = " [" + ", ".join(sector.sector_tags) + "]"
+		sector_text += tags_str
+
 	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
 		sector_text = "W2W Focus Mode - " + sector_text
 	elif event_type == 5:  # RED_RESULT (Failure Table)
@@ -105,6 +111,12 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 	var check_type_for_display = sector.failure_table_check_type if event_type == 5 else sector.check_type
 	var check_type_str = _get_check_type_string(check_type_for_display)
 	var sector_text = "Sector: %s (%s)" % [sector.sector_name, check_type_str.to_upper()]
+
+	# Add sector tags if present
+	if not sector.sector_tags.is_empty():
+		var tags_str = " [" + ", ".join(sector.sector_tags) + "]"
+		sector_text += tags_str
+
 	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
 		sector_text = "W2W Focus Mode - " + sector_text
 	elif event_type == 5:  # RED_RESULT (Failure Table)
