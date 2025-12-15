@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cm5syu3tugdlj"]
+
+[ext_resource type="Script" uid="uid://cql0tb38p5q35" path="res://tests/test_fin_badges_in_race.gd" id="1_m365n"]
+
+[node name="FinBadgesInRace" type="Node2D"]
+script = ExtResource("1_m365n")
