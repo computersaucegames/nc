@@ -77,6 +77,8 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 
 	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
 		sector_text = "W2W Focus Mode - " + sector_text
+	elif event_type == 2:  # RACE_START
+		sector_text = "Race Start - " + sector_text
 	elif event_type == 5:  # RED_RESULT (Failure Table)
 		sector_text = "Failure Table - " + sector_text
 	sector_label.text = sector_text
@@ -132,6 +134,8 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 
 	if event_type == 0:  # WHEEL_TO_WHEEL_ROLL
 		sector_text = "W2W Focus Mode - " + sector_text
+	elif event_type == 2:  # RACE_START
+		sector_text = "Race Start - " + sector_text
 	elif event_type == 5:  # RED_RESULT (Failure Table)
 		sector_text = "Failure Table - " + sector_text
 	sector_label.text = sector_text
