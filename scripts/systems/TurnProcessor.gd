@@ -124,7 +124,15 @@ func process_turn(pilot: PilotState, sector: Sector, circuit: Circuit, current_r
 
 ## Make a dice roll for a pilot in a sector
 func make_roll(pilot: PilotState, sector: Sector, current_round: int) -> Dice.DiceResult:
+	# Get pilot stat
 	var stat_value = pilot.get_stat(sector.check_type)
+
+	# Add fin stat if sector requires it and pilot has a fin
+	if sector.fin_stat_type != Sector.FinStatType.NONE and pilot.fin_state != null:
+		var fin_stat_name = _get_fin_stat_name(sector.fin_stat_type)
+		var fin_stat_value = pilot.fin_state.get_stat(fin_stat_name)
+		stat_value += fin_stat_value
+
 	var modifiers = []
 
 	# Apply poor start disadvantage if applicable
@@ -278,3 +286,17 @@ func _handle_pilot_finish(pilot: PilotState):
 
 	pilot.finish_race(finish_position, race_sim.current_round)
 	race_sim.pilot_finished.emit(pilot, finish_position)
+
+## Helper to convert fin stat type enum to string for FinState.get_stat()
+func _get_fin_stat_name(fin_stat_type: Sector.FinStatType) -> String:
+	match fin_stat_type:
+		Sector.FinStatType.THRUST:
+			return "THRUST"
+		Sector.FinStatType.FORM:
+			return "FORM"
+		Sector.FinStatType.RESPONSE:
+			return "RESPONSE"
+		Sector.FinStatType.SYNC:
+			return "SYNC"
+		_:
+			return ""
