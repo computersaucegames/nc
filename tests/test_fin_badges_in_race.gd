@@ -222,7 +222,7 @@ func test_fin_badge_earning():
 	var sector = Sector.new()
 	sector.sector_name = "Technical Section"
 	sector.check_type = Sector.CheckType.CRAFT
-	sector.sector_tags = ["technical"]
+	sector.sector_tags.append("technical")  # Use append for typed array
 	sector.grey_threshold = 5
 	sector.green_threshold = 10
 	sector.purple_threshold = 15
