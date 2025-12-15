@@ -87,6 +87,19 @@ func _execute_failure_table_roll(result: StageResult):
 			if badge:
 				race_sim.negative_badge_applied.emit(pilot, badge)
 
+		# Apply the same badge to the pilot's fin if they have one
+		if pilot.fin != null:
+			var fin_badge_applied = race_sim.FailureTableRes.apply_badge_based_on_tier_to_fin(pilot.fin, badge_id, failure_roll.tier)
+			if fin_badge_applied:
+				# Get the actual badge that was applied
+				var applied_badge_id = badge_id
+				if failure_roll.tier == Dice.Tier.GREY:
+					applied_badge_id = badge_id + "_severe"
+				var badge = race_sim.FailureTableRes.load_badge(applied_badge_id)
+				if badge:
+					# TODO: Add signal for fin badge application if needed
+					pass
+
 	# Store failure data in event
 	focus_event.roll_results = [failure_roll]
 	focus_event.metadata["consequence"] = consequence

@@ -10,6 +10,7 @@ func _ready():
 	test_fin_badge_applies_to_overtaking_roll()
 	test_multiple_fin_badges()
 	test_fin_badge_earning()
+	test_negative_fin_badges_from_failures()
 
 	print("\n=== ALL FIN RACE TESTS COMPLETE ===\n")
 
@@ -253,5 +254,83 @@ func test_fin_badge_earning():
 
 	# Note: We can't easily test badge awarding without creating earnable badges
 	# but the tracking mechanism works
+
+	print("  PASSED\n")
+
+func test_negative_fin_badges_from_failures():
+	print("TEST 5: Fins receive negative badges from failures...")
+
+	# Create a fin
+	var fin_resource = Fin.new()
+	fin_resource.fin_name = "Test Fin"
+	fin_resource.THRUST = 6
+	fin_resource.FORM = 6
+	fin_resource.RESPONSE = 6
+	fin_resource.SYNC = 6
+
+	var fin_state = FinState.new()
+	fin_state.setup_from_fin_resource(fin_resource)
+
+	# Test applying negative badge (GREEN tier - base badge)
+	var badge_applied = FailureTableResolver.apply_badge_based_on_tier_to_fin(fin_state, "rattled", Dice.Tier.GREEN)
+	assert(badge_applied, "Should successfully apply rattled badge to fin")
+	assert(fin_state.temporary_badges.size() == 1, "Fin should have 1 temporary badge")
+	assert(fin_state.temporary_badges[0].badge_id == "rattled", "Badge should be 'rattled'")
+	print("  ✓ GREEN tier failure applies base negative badge to fin")
+
+	# Test applying severe badge (GREY tier)
+	var fin_state2 = FinState.new()
+	fin_state2.setup_from_fin_resource(fin_resource)
+
+	var severe_applied = FailureTableResolver.apply_badge_based_on_tier_to_fin(fin_state2, "rattled", Dice.Tier.GREY)
+	assert(severe_applied, "Should successfully apply rattled_severe badge to fin")
+	assert(fin_state2.temporary_badges.size() == 1, "Fin should have 1 temporary badge")
+	assert(fin_state2.temporary_badges[0].badge_id == "rattled_severe", "Badge should be 'rattled_severe'")
+	print("  ✓ GREY tier failure applies severe negative badge to fin")
+
+	# Test that PURPLE doesn't apply badge
+	var fin_state3 = FinState.new()
+	fin_state3.setup_from_fin_resource(fin_resource)
+
+	var purple_applied = FailureTableResolver.apply_badge_based_on_tier_to_fin(fin_state3, "rattled", Dice.Tier.PURPLE)
+	assert(not purple_applied, "PURPLE tier should not apply badge")
+	assert(fin_state3.temporary_badges.size() == 0, "Fin should have 0 temporary badges")
+	print("  ✓ PURPLE tier failure does not apply badge to fin")
+
+	# Test that badges don't duplicate
+	badge_applied = FailureTableResolver.apply_badge_based_on_tier_to_fin(fin_state, "rattled", Dice.Tier.GREEN)
+	assert(not badge_applied, "Should not apply duplicate badge")
+	assert(fin_state.temporary_badges.size() == 1, "Fin should still have only 1 temporary badge")
+	print("  ✓ Duplicate badges are prevented")
+
+	# Test that negative badges apply modifiers
+	var circuit = load("res://resources/circuits/test_tracks/test_alpha.tres")
+	if circuit != null:
+		var pilot_resource = load("res://resources/pilots/buoy.tres")
+		var pilot_state = PilotState.new()
+		pilot_state.setup_from_pilot_resource(pilot_resource, 1, "")
+		pilot_state.setup_fin(fin_resource)
+		pilot_state.fin = fin_state  # Use the fin_state with rattled badge
+
+		var sector = circuit.sectors[0]
+		var context = {
+			"roll_type": "movement",
+			"sector": sector,
+			"pilot": pilot_state
+		}
+
+		# Get modifiers from fin badges
+		var fin_mods = BadgeSystem.get_active_modifiers_for_fin(fin_state, context)
+
+		# Rattled should apply -1 penalty
+		var has_rattled = false
+		for mod in fin_mods:
+			if mod.source == "Rattled":
+				has_rattled = true
+				assert(mod.type == Dice.ModType.FLAT_PENALTY, "Should be FLAT_PENALTY")
+				assert(mod.value == 1, "Should be -1 penalty")
+				print("  ✓ Rattled badge applies -%d penalty to fin rolls" % mod.value)
+
+		assert(has_rattled, "Should have Rattled modifier active")
 
 	print("  PASSED\n")
