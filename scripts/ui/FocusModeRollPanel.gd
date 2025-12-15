@@ -83,10 +83,23 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 
 	# Show pilot current stats with tied position if in W2W mode
 	var stat_value = pilot.get_stat(check_type)
+	var stat_display = "%s: +%d" % [check_type_str.capitalize(), stat_value]
+
+	# Add fin stat if sector uses combined stats
+	if sector.fin_stat_type != Sector.FinStatType.NONE and pilot.fin_state != null:
+		var fin_stat_name = _get_fin_stat_name(sector.fin_stat_type)
+		var fin_stat_value = pilot.fin_state.get_stat(fin_stat_name)
+		var fin_stat_display = fin_stat_name.capitalize()
+		stat_display = "%s: +%d | Fin %s: +%d (Total: +%d)" % [
+			check_type_str.capitalize(), stat_value,
+			fin_stat_display, fin_stat_value,
+			stat_value + fin_stat_value
+		]
+
 	if tied_position > 0:
-		pilot_info_label.text = _format_pilot_info("Tied for P%d" % tied_position, "%s: +%d" % [check_type_str.capitalize(), stat_value])
+		pilot_info_label.text = _format_pilot_info("Tied for P%d" % tied_position, stat_display)
 	else:
-		pilot_info_label.text = _format_pilot_info("Position: %d" % pilot.position, "%s: +%d" % [check_type_str.capitalize(), stat_value])
+		pilot_info_label.text = _format_pilot_info("Position: %d" % pilot.position, stat_display)
 
 	# Hide roll results until rolled
 	roll_container.visible = false
@@ -136,8 +149,20 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 	d20_result.text = "d20 Roll: %d" % roll_result.base_roll
 	d20_result.add_theme_color_override("font_color", Color.WHITE)
 
-	# Stat bonus
-	stat_bonus.text = "%s Stat: +%d" % [roll_result.stat_name.capitalize(), roll_result.stat_value]
+	# Stat bonus - show breakdown if using combined pilot+fin stats
+	var check_type_for_roll = sector.failure_table_check_type if event_type == 5 else sector.check_type
+	if sector.fin_stat_type != Sector.FinStatType.NONE and pilot.fin_state != null:
+		# Combined stat display
+		var pilot_stat = pilot.get_stat(check_type_for_roll)
+		var fin_stat_name = _get_fin_stat_name(sector.fin_stat_type)
+		var fin_stat = pilot.fin_state.get_stat(fin_stat_name)
+		stat_bonus.text = "Pilot %s: +%d | Fin %s: +%d" % [
+			roll_result.stat_name.capitalize(), pilot_stat,
+			fin_stat_name.capitalize(), fin_stat
+		]
+	else:
+		# Pilot stat only
+		stat_bonus.text = "%s Stat: +%d" % [roll_result.stat_name.capitalize(), roll_result.stat_value]
 	stat_bonus.add_theme_color_override("font_color", Color.CYAN)
 
 	# Clear previous modifiers
@@ -243,3 +268,16 @@ func _get_check_type_string(check_type: Sector.CheckType) -> String:
 			return "edge"
 		_:
 			return "unknown"
+
+func _get_fin_stat_name(fin_stat_type: Sector.FinStatType) -> String:
+	match fin_stat_type:
+		Sector.FinStatType.THRUST:
+			return "THRUST"
+		Sector.FinStatType.FORM:
+			return "FORM"
+		Sector.FinStatType.RESPONSE:
+			return "RESPONSE"
+		Sector.FinStatType.SYNC:
+			return "SYNC"
+		_:
+			return ""
