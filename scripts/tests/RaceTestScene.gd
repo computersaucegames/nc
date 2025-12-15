@@ -145,11 +145,31 @@ func _on_start_pressed():
 
 	# Load pilot resources (new format with badges!)
 	var pilots = [
-		{"pilot": load("res://resources/pilots/buoy.tres"), "headshot": "res://resources/art/buoy.png"},
-		{"pilot": load("res://resources/pilots/cowboy.tres"), "headshot": "res://resources/art/cowboy.png"},
-		{"pilot": load("res://resources/pilots/redman.tres"), "headshot": "res://resources/art/redman.png"},
-		{"pilot": load("res://resources/pilots/stubble.tres"), "headshot": "res://resources/art/stubble.png"},
-		{"pilot": load("res://resources/pilots/poshpaul.tres"), "headshot": "res://resources/art/poshpaul.png"}
+		{
+			"pilot": load("res://resources/pilots/buoy.tres"),
+			"headshot": "res://resources/art/buoy.png",
+			"fin": load("res://resources/fins/thunderbolt.tres")  # Aggressive + Power
+		},
+		{
+			"pilot": load("res://resources/pilots/cowboy.tres"),
+			"headshot": "res://resources/art/cowboy.png",
+			"fin": load("res://resources/fins/scalpel.tres")  # Technical + Precision
+		},
+		{
+			"pilot": load("res://resources/pilots/redman.tres"),
+			"headshot": "res://resources/art/redman.png",
+			"fin": load("res://resources/fins/interceptor_mk7.tres")  # Speed + Agility
+		},
+		{
+			"pilot": load("res://resources/pilots/stubble.tres"),
+			"headshot": "res://resources/art/stubble.png",
+			"fin": load("res://resources/fins/scalpel.tres")  # Technical craft specialist
+		},
+		{
+			"pilot": load("res://resources/pilots/poshpaul.tres"),
+			"headshot": "res://resources/art/poshpaul.png",
+			"fin": load("res://resources/fins/equilibrium.tres")  # Balanced sync specialist
+		}
 	]
 
 	# CHANGED: Use race_controls to enable pause button
