@@ -327,9 +327,9 @@ func test_negative_fin_badges_from_failures():
 		for mod in fin_mods:
 			if mod.source == "Rattled":
 				has_rattled = true
-				assert(mod.type == Dice.ModType.FLAT_PENALTY, "Should be FLAT_PENALTY")
-				assert(mod.value == 1, "Should be -1 penalty")
-				print("  ✓ Rattled badge applies -%d penalty to fin rolls" % mod.value)
+				assert(mod.type == Dice.ModType.FLAT_BONUS, "Should be FLAT_BONUS")
+				assert(mod.value == -1, "Should be -1 penalty")
+				print("  ✓ Rattled badge applies %d penalty to fin rolls" % mod.value)
 
 		assert(has_rattled, "Should have Rattled modifier active")
 
