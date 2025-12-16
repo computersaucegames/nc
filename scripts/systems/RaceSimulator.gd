@@ -42,6 +42,14 @@ signal w2w_contact_triggered(failing_pilot: PilotState, other_pilot: PilotState,
 signal w2w_avoidance_roll_required(pilot: PilotState, modified_gates: Dictionary)
 signal w2w_avoidance_roll_result(avoiding_pilot: PilotState, roll_result: Dice.DiceResult, description: String)
 signal w2w_dual_crash(pilot1: PilotState, pilot2: PilotState, sector: Sector)
+signal pit_entry_started(pilot: PilotState, sector: Sector)
+signal pit_entry_penalty(pilot: PilotState, penalty_gaps: int)
+signal pit_box_started(pilot: PilotState, sector: Sector)
+signal pit_box_penalty(pilot: PilotState, penalty_gaps: int)
+signal pit_badges_cleared(pilot: PilotState, badge_ids: Array)
+signal pit_exit_started(pilot: PilotState, sector: Sector)
+signal pit_exit_penalty(pilot: PilotState, penalty_gaps: int)
+signal pit_stop_completed(pilot: PilotState, total_cost: int, badges_cleared: Array)
 signal race_finished(final_positions: Array)
 
 # Race states
@@ -272,6 +280,11 @@ func _handle_round_result(result: RoundProc.RoundResult):
 			# Schedule next round
 			auto_advance_timer.start(auto_advance_delay)
 
+		RoundProc.RoundResult.Status.NEEDS_PIT_STOP:
+			# Trigger pit stop focus mode
+			process_pit_stop_focus_mode(result.pit_pilot)
+			# Don't schedule next round - will resume after focus mode
+
 		RoundProc.RoundResult.Status.NEEDS_W2W_FOCUS:
 			# Trigger W2W focus mode
 			process_w2w_focus_mode(result.w2w_pilot1, result.w2w_pilot2)
@@ -350,6 +363,33 @@ func process_w2w_focus_mode(pilot1: PilotState, pilot2: PilotState):
 	FocusMode.activate(event)
 
 # [Milestone 2] Old W2W methods removed - logic moved to W2WFailureSequence
+
+# Process pit stop in Focus Mode
+func process_pit_stop_focus_mode(pilot: PilotState):
+	# RoundProcessor already marked pilot as processed
+
+	# Get the current sector
+	var sector = current_circuit.sectors[pilot.current_sector]
+
+	# Emit focus mode trigger event
+	focus_mode_triggered.emit([pilot], "Pit Stop - %s" % pilot.name)
+
+	# Create Focus Mode event for pit stop
+	var event = FocusMode.create_pit_stop_event(pilot, sector, current_circuit)
+
+	# Create sequence
+	current_focus_sequence = PitStopSequence.new(event, self)
+
+	# Enter Focus Mode state
+	race_mode = RaceMode.FOCUS_MODE
+
+	# Connect to Focus Mode advance signal
+	current_focus_advance_callback = func():
+		_advance_focus_sequence()
+	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
+
+	# Activate Focus Mode (UI will display)
+	FocusMode.activate(event)
 
 # Process red result in Focus Mode (failure table)
 func process_red_result_focus_mode(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult):

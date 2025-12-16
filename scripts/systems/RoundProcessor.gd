@@ -25,12 +25,14 @@ class RoundResult extends RefCounted:
 	enum Status {
 		COMPLETED,              # Round completed, schedule next round
 		NEEDS_W2W_FOCUS,        # W2W detected - needs focus mode
+		NEEDS_PIT_STOP,         # Pilot needs to pit - trigger pit stop sequence
 		RACE_FINISHED           # All pilots finished/DNF'd
 	}
 
 	var status: Status = Status.COMPLETED
 	var w2w_pilot1: PilotState = null
 	var w2w_pilot2: PilotState = null
+	var pit_pilot: PilotState = null
 
 	static func completed() -> RoundResult:
 		var result = RoundResult.new()
@@ -42,6 +44,12 @@ class RoundResult extends RefCounted:
 		result.status = Status.NEEDS_W2W_FOCUS
 		result.w2w_pilot1 = pilot1
 		result.w2w_pilot2 = pilot2
+		return result
+
+	static func needs_pit_stop(pilot: PilotState) -> RoundResult:
+		var result = RoundResult.new()
+		result.status = Status.NEEDS_PIT_STOP
+		result.pit_pilot = pilot
 		return result
 
 	static func race_finished() -> RoundResult:
@@ -144,6 +152,14 @@ func _process_pilots_from_index(start_index: int, pilots: Array, circuit: Circui
 		if pilot in pilots_processed_this_round:
 			continue
 
+		# Check if this pilot wants to pit stop
+		if _should_pilot_pit(pilot, circuit):
+			# Mark pilot as processed
+			pilots_processed_this_round.append(pilot)
+
+			# Return pit stop result - RaceSimulator will trigger pit stop sequence
+			return RoundResult.needs_pit_stop(pilot)
+
 		# Check if this pilot is in a W2W situation
 		var w2w_partner = _get_unprocessed_w2w_partner(pilot, pilots)
 		if w2w_partner != null:
@@ -196,3 +212,28 @@ func _check_race_finished(pilots: Array) -> bool:
 		if not pilot.finished and not pilot.did_not_finish:
 			return false
 	return true
+
+## Check if pilot should enter pit lane
+## This is the pit stop decision logic - can be expanded with AI/strategy later
+func _should_pilot_pit(pilot: PilotState, circuit: Circuit) -> bool:
+	# 1. Check if circuit has pit lane
+	if not circuit.has_pit_lane:
+		return false
+
+	# 2. Check if pilot is on a sector that allows pit entry
+	var current_sector = circuit.sectors[pilot.current_sector]
+	if not current_sector.pit_entry_available:
+		return false
+
+	# 3. Check if pilot already pitted this lap (prevent multiple pits per lap)
+	# TODO: Track last pit lap to prevent multiple pits per lap
+
+	# 4. Strategic decision: Does pilot NEED to pit?
+	# For now, automatically pit if fin has negative badges
+	if pilot.fin_state != null and pilot.fin_state.temporary_badges.size() > 0:
+		# Has badges that need clearing
+		return true
+
+	# 5. Future: Check fuel, tire wear, position safety, etc.
+
+	return false

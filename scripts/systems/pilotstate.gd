@@ -55,6 +55,12 @@ var temporary_badges: Array[Badge] = []  # Negative badges earned during this ra
 # Failure table effects
 var penalty_next_turn: int = 0  # Gap penalty to apply on next roll (from overflow)
 
+# Pit stop state tracking
+var is_in_pit_lane: bool = false  # Currently in pit lane
+var pit_lane_stage: int = -1  # Which pit sector: 0=entry, 1=box, 2=exit, -1=not in pits
+var pit_stops_completed: int = 0  # Total pit stops this race
+var sectors_before_pit_entry: int = -1  # Remember which sector we entered from
+
 # Pilot stats (will be replaced by full pilot resource later)
 var twitch: int = 5
 var craft: int = 5
@@ -182,3 +188,29 @@ func crash(reason: String = "Crashed", round_number: int = 0) -> void:
 	dnf_reason = reason
 	dnf_round = round_number
 	clear_statuses()
+
+# Pit stop management
+func enter_pit_lane(entry_sector: int) -> void:
+	is_in_pit_lane = true
+	pit_lane_stage = 0  # Start at pit entry
+	sectors_before_pit_entry = entry_sector
+
+func advance_pit_stage() -> void:
+	if is_in_pit_lane:
+		pit_lane_stage += 1
+
+func exit_pit_lane(rejoin_sector: int) -> void:
+	is_in_pit_lane = false
+	pit_lane_stage = -1
+	pit_stops_completed += 1
+	current_sector = rejoin_sector
+	gap_in_sector = 0  # Start at beginning of rejoin sector
+
+func is_in_pit_entry() -> bool:
+	return is_in_pit_lane and pit_lane_stage == 0
+
+func is_in_pit_box() -> bool:
+	return is_in_pit_lane and pit_lane_stage == 1
+
+func is_in_pit_exit() -> bool:
+	return is_in_pit_lane and pit_lane_stage == 2
