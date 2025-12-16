@@ -207,8 +207,8 @@ func _execute_failure_table(result: StageResult):
 				race_sim.negative_badge_applied.emit(failing_pilot, badge)
 
 		# Apply the same badge to the failing pilot's fin if they have one
-		if failing_pilot.fin != null:
-			var fin_badge_applied = race_sim.FailureTableRes.apply_badge_based_on_tier_to_fin(failing_pilot.fin, badge_id, failure_roll.tier)
+		if failing_pilot.fin_state != null:
+			var fin_badge_applied = race_sim.FailureTableRes.apply_badge_based_on_tier_to_fin(failing_pilot.fin_state, badge_id, failure_roll.tier)
 			if fin_badge_applied:
 				# TODO: Add signal for fin badge application if needed
 				pass
@@ -306,8 +306,8 @@ func _execute_avoidance_save(result: StageResult):
 					race_sim.negative_badge_applied.emit(avoiding_pilot, badge)
 
 			# Apply Rattled badge to avoiding pilot's fin if they have one
-			if avoiding_pilot.fin != null:
-				var fin_badge_applied = race_sim.FailureTableRes.apply_badge_based_on_tier_to_fin(avoiding_pilot.fin, "rattled", Dice.Tier.GREY)
+			if avoiding_pilot.fin_state != null:
+				var fin_badge_applied = race_sim.FailureTableRes.apply_badge_based_on_tier_to_fin(avoiding_pilot.fin_state, "rattled", Dice.Tier.GREY)
 				if fin_badge_applied:
 					# TODO: Add signal for fin badge application if needed
 					pass
