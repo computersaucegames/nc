@@ -27,6 +27,14 @@ enum FinStatType {
 @export var is_start_sector: bool = false  # Is this where the race starts?
 @export var max_side_by_side: int = 2  # Maximum number of fins that can race wheel-to-wheel
 
+# Pit lane properties
+@export var is_pit_lane_sector: bool = false  # Is this sector part of the pit lane?
+@export var is_pit_entry: bool = false  # Is this the pit entry sector?
+@export var is_pit_box: bool = false  # Is this the pit box sector (where service happens)?
+@export var is_pit_exit: bool = false  # Is this the pit exit sector?
+@export var pit_entry_available: bool = false  # Can pilots enter pits after completing this sector?
+@export var mechanic_stat_type: String = ""  # Which mechanic stat to use ("build", "rig", "cool", or "" for pilot stat)
+
 # Gate thresholds - the roll must meet or exceed these values
 @export_group("Gate Thresholds")
 @export var grey_threshold: int = 5   # Below this = Red (failure)

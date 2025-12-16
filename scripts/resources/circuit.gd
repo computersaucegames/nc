@@ -11,6 +11,12 @@ class_name Circuit
 @export var runs_counter_clockwise: bool = false  # If true, circuit runs counter-clockwise
 @export var available_sector_badges: Array[Badge] = []  # Badges that can be earned on this circuit
 
+# Pit lane infrastructure
+@export var has_pit_lane: bool = false  # Does this circuit have a pit lane?
+@export var pit_lane_sectors: Array[Sector] = []  # The 3 pit sectors: entry, box, exit
+@export var pit_entry_after_sector: int = -1  # Main track sector index after which pit entry is available (e.g., 7 for S7)
+@export var pit_exit_rejoin_sector: int = -1  # Main track sector index where pit exit rejoins (e.g., 9 for S9)
+
 func get_total_length() -> int:
 	var total: int = 0
 	for sector in sectors:
