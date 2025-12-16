@@ -11,6 +11,9 @@ var headshot: String = ""  # Path to pilot headshot image
 # Fin data (the craft this pilot is controlling)
 var fin_state: FinState = null
 
+# Mechanic data (the pit crew for this pilot)
+var mechanic_state: MechanicState = null
+
 # Race position data
 var current_sector: int = 0
 var gap_in_sector: int = 0
@@ -129,6 +132,17 @@ func setup_from_pilot_resource(pilot_resource: Pilot, start_position: int = 1, h
 func setup_fin(fin_resource: Fin) -> void:
 	fin_state = FinState.new()
 	fin_state.setup_from_fin_resource(fin_resource)
+
+# Assign a mechanic to this pilot (for pit stops)
+func setup_mechanic(mechanic_resource: Mechanic) -> void:
+	mechanic_state = MechanicState.new()
+	mechanic_state.setup_from_mechanic_resource(mechanic_resource)
+
+# Setup default shared mechanic for all pilots
+func setup_default_mechanic() -> void:
+	var default_mechanic = load("res://resources/mechanics/default_crew.tres") as Mechanic
+	if default_mechanic:
+		setup_mechanic(default_mechanic)
 
 # Initialize from dictionary (for easy setup - legacy support)
 func setup_from_dict(data: Dictionary, start_position: int = 1) -> void:

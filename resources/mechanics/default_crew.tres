@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Mechanic" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/mechanic.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+mechanic_name = "Standard Pit Crew"
+mechanic_id = "default_crew"
+portrait = ""
+BUILD = 7
+RIG = 6
+COOL = 5
+bio = "A reliable pit crew handling routine service and repairs. Solid across the board with good repair skills."
