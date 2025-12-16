@@ -310,7 +310,9 @@ func test_negative_fin_badges_from_failures():
 		var pilot_state = PilotState.new()
 		pilot_state.setup_from_pilot_resource(pilot_resource, 1, "")
 		pilot_state.setup_fin(fin_resource)
-		pilot_state.fin = fin_state  # Use the fin_state with rattled badge
+
+		# Apply badge to the pilot's fin_state
+		FailureTableResolver.apply_badge_based_on_tier_to_fin(pilot_state.fin_state, "rattled", Dice.Tier.GREEN)
 
 		var sector = circuit.sectors[0]
 		var context = {
@@ -320,7 +322,7 @@ func test_negative_fin_badges_from_failures():
 		}
 
 		# Get modifiers from fin badges
-		var fin_mods = BadgeSystem.get_active_modifiers_for_fin(fin_state, context)
+		var fin_mods = BadgeSystem.get_active_modifiers_for_fin(pilot_state.fin_state, context)
 
 		# Rattled should apply -1 penalty
 		var has_rattled = false
