@@ -160,6 +160,7 @@ carrythru = 3
 check_type = 0
 is_start_sector = false
 max_side_by_side = 4
+pit_entry_available = true
 grey_threshold = 5
 green_threshold = 10
 purple_threshold = 15
@@ -257,6 +258,66 @@ w2w_failure_table_override = Array[Dictionary]([])
 sector_tags = Array[String](["descent", "straight"])
 metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
+[sub_resource type="Resource" id="Resource_pit_entry"]
+script = ExtResource("2_xu5y8")
+sector_name = "Pit Entry"
+length_in_gap = 2
+carrythru = 0
+check_type = 1
+is_pit_lane_sector = true
+is_pit_entry = true
+mechanic_stat_type = ""
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Miss pit entry markers - overshoot, lose 2 Gap", "Hesitant entry - scrub speed, lose 1 Gap", "Perfect pit lane entry - no penalty"])
+failure_table_check_type = 1
+sector_tags = Array[String](["pit_lane"])
+
+[sub_resource type="Resource" id="Resource_pit_box"]
+script = ExtResource("2_xu5y8")
+sector_name = "Pit Box"
+length_in_gap = 3
+carrythru = 0
+check_type = 2
+is_pit_lane_sector = true
+is_pit_box = true
+mechanic_stat_type = "rig"
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Equipment fumble - extended service, lose 2 Gap", "Clumsy repairs - slow work, lose 1 Gap", "Smooth service - no penalty"])
+failure_table_check_type = 2
+sector_tags = Array[String](["pit_lane", "pit_box"])
+
+[sub_resource type="Resource" id="Resource_pit_exit"]
+script = ExtResource("2_xu5y8")
+sector_name = "Pit Exit"
+length_in_gap = 2
+carrythru = 0
+check_type = 3
+is_pit_lane_sector = true
+is_pit_exit = true
+mechanic_stat_type = "cool"
+grey_threshold = 5
+green_threshold = 10
+purple_threshold = 15
+red_movement = 1
+grey_movement = 2
+green_movement = 3
+purple_movement = 4
+failure_table = Array[String](["Panic merge - unsafe exit, lose 2 Gap", "Nervous timing - hesitant rejoin, lose 1 Gap", "Confident clear - no penalty"])
+failure_table_check_type = 3
+sector_tags = Array[String](["pit_lane"])
+
 [resource]
 script = ExtResource("1_ciur4")
 circuit_name = "Mountain Circuit"
@@ -266,4 +327,8 @@ sectors = Array[ExtResource("2_xu5y8")]([SubResource("Resource_ciur4"), SubResou
 display_scene = ExtResource("3_display")
 runs_counter_clockwise = true
 available_sector_badges = Array[Badge]([ExtResource("4_badge_mgoat")])
+has_pit_lane = true
+pit_lane_sectors = Array[Sector]([SubResource("Resource_pit_entry"), SubResource("Resource_pit_box"), SubResource("Resource_pit_exit")])
+pit_entry_after_sector = 7
+pit_exit_rejoin_sector = 9
 metadata/_custom_type_script = "uid://db2vaxvslmder"
