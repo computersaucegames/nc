@@ -7,7 +7,7 @@
 
 [sub_resource type="Resource" id="Resource_ciur4"]
 script = ExtResource("2_xu5y8")
-sector_name = "Launch Straight"
+sector_name = "S0: Launch Straight"
 length_in_gap = 6
 carrythru = 3
 check_type = 0
@@ -28,7 +28,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_xu5y8"]
 script = ExtResource("2_xu5y8")
-sector_name = "Opening Run"
+sector_name = "S1: Opening Run"
 length_in_gap = 7
 carrythru = 0
 check_type = 3
@@ -49,7 +49,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_barr0"]
 script = ExtResource("2_xu5y8")
-sector_name = "Narrow Pass"
+sector_name = "S2: Narrow Pass"
 length_in_gap = 4
 carrythru = 1
 check_type = 1
@@ -70,7 +70,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_bdqwg"]
 script = ExtResource("2_xu5y8")
-sector_name = "Mountain Drop"
+sector_name = "S3: Mountain Drop"
 length_in_gap = 5
 carrythru = 1
 check_type = 3
@@ -91,7 +91,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_pno2k"]
 script = ExtResource("2_xu5y8")
-sector_name = "Midfield Climb"
+sector_name = "S4: Midfield Climb"
 length_in_gap = 6
 carrythru = 2
 check_type = 1
@@ -112,7 +112,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_mx33o"]
 script = ExtResource("2_xu5y8")
-sector_name = "Summit Approach"
+sector_name = "S5: Summit Approach"
 length_in_gap = 5
 carrythru = 0
 check_type = 2
@@ -133,7 +133,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_jwkt6"]
 script = ExtResource("2_xu5y8")
-sector_name = "Summit Apex"
+sector_name = "S6: Summit Apex"
 length_in_gap = 4
 carrythru = 1
 check_type = 1
@@ -154,7 +154,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_qiu2a"]
 script = ExtResource("2_xu5y8")
-sector_name = "Downhill Straight"
+sector_name = "S7: Downhill Straight"
 length_in_gap = 15
 carrythru = 3
 check_type = 0
@@ -175,7 +175,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec9"]
 script = ExtResource("2_xu5y8")
-sector_name = "Lower Esses Entry"
+sector_name = "S8: Lower Esses Entry"
 length_in_gap = 5
 carrythru = 2
 check_type = 1
@@ -196,7 +196,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec10"]
 script = ExtResource("2_xu5y8")
-sector_name = "Mid Esses"
+sector_name = "S9: Mid Esses"
 length_in_gap = 5
 carrythru = 2
 check_type = 2
@@ -217,7 +217,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec11"]
 script = ExtResource("2_xu5y8")
-sector_name = "Upper Esses Exit"
+sector_name = "S10: Upper Esses Exit"
 length_in_gap = 4
 carrythru = 2
 check_type = 3
@@ -238,7 +238,7 @@ metadata/_custom_type_script = "uid://bwoj1uted0qn4"
 
 [sub_resource type="Resource" id="Resource_sec12"]
 script = ExtResource("2_xu5y8")
-sector_name = "Final Descent"
+sector_name = "S11: Final Descent"
 length_in_gap = 7
 carrythru = 3
 check_type = 0
