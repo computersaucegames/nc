@@ -129,8 +129,8 @@ func _execute_pit_box(result: StageResult):
 	if time_penalty > 0:
 		race_sim.pit_box_penalty.emit(pilot, time_penalty)
 
-	# Clear badges from fin (this is the main purpose of pit stops!)
-	var badges_cleared = _clear_fin_badges(pilot, roll)
+	# Clear badges from BOTH pilot AND fin (this is the main purpose of pit stops!)
+	var badges_cleared = _clear_pilot_and_fin_badges(pilot, roll)
 	context["badges_cleared"] = badges_cleared
 
 	if badges_cleared.size() > 0:
@@ -259,33 +259,45 @@ func _calculate_pit_penalty(roll: Dice.DiceResult, sector: Sector) -> int:
 		_:
 			return 0
 
-## Clear badges from fin based on pit stop quality
+## Clear badges from BOTH pilot and fin based on pit stop quality
 ## GREEN/PURPLE: Clear normal badges (base badges)
-## Extended stop (future): Can clear severe badges too
-func _clear_fin_badges(pilot_state: PilotState, box_roll: Dice.DiceResult) -> Array:
+## PURPLE: Can also clear severe badges
+func _clear_pilot_and_fin_badges(pilot_state: PilotState, box_roll: Dice.DiceResult) -> Array:
 	var cleared_badges = []
-
-	if not pilot_state.fin_state:
-		return cleared_badges
 
 	# Determine what can be cleared based on roll quality
 	var can_clear_severe = false
 	if box_roll.tier == Dice.Tier.PURPLE:
 		can_clear_severe = true  # Perfect service clears everything
 
-	# Clear badges from fin
-	var badges_to_remove = []
-	for badge in pilot_state.fin_state.temporary_badges:
+	# Clear badges from PILOT
+	var pilot_badges_to_remove = []
+	for badge in pilot_state.temporary_badges:
 		var is_severe = badge.badge_id.ends_with("_severe")
 
 		# Can always clear normal badges, severe only on PURPLE
 		if not is_severe or can_clear_severe:
-			badges_to_remove.append(badge)
+			pilot_badges_to_remove.append(badge)
 			cleared_badges.append(badge.badge_id)
 
-	# Remove cleared badges
-	for badge in badges_to_remove:
-		pilot_state.fin_state.temporary_badges.erase(badge)
+	# Remove cleared badges from pilot
+	for badge in pilot_badges_to_remove:
+		pilot_state.temporary_badges.erase(badge)
+
+	# Clear badges from FIN
+	if pilot_state.fin_state:
+		var fin_badges_to_remove = []
+		for badge in pilot_state.fin_state.temporary_badges:
+			var is_severe = badge.badge_id.ends_with("_severe")
+
+			# Can always clear normal badges, severe only on PURPLE
+			if not is_severe or can_clear_severe:
+				fin_badges_to_remove.append(badge)
+				cleared_badges.append(badge.badge_id)
+
+		# Remove cleared badges from fin
+		for badge in fin_badges_to_remove:
+			pilot_state.fin_state.temporary_badges.erase(badge)
 
 	return cleared_badges
 

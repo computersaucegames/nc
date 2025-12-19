@@ -94,6 +94,11 @@ func _create_pilot_panels(event: FocusModeManager.FocusModeEvent):
 	# Get viewport size
 	var viewport_size = get_viewport_rect().size
 
+	# Special handling for PIT_STOP events
+	if event.event_type == FocusModeManager.EventType.PIT_STOP:
+		_create_pit_stop_panel(event, viewport_size, PANEL_SIZE, BOTTOM_MARGIN)
+		return
+
 	# Calculate tied position for W2W events
 	var tied_position = -1
 	if event.event_type == FocusModeManager.EventType.WHEEL_TO_WHEEL_ROLL and event.pilots.size() > 0:
@@ -159,6 +164,33 @@ func _get_pilot_screen_position(pilot_id: int) -> Variant:
 func _get_pilot_id_from_state(pilot_state: PilotState) -> int:
 	# Simply return the pilot_id field from the PilotState
 	return pilot_state.pilot_id
+
+## Create a centered panel for pit stop events
+func _create_pit_stop_panel(event: FocusModeManager.FocusModeEvent, viewport_size: Vector2, panel_size: Vector2, bottom_margin: float):
+	if event.pilots.size() == 0:
+		return
+
+	var pilot = event.pilots[0]
+
+	# Create panel for pit stop
+	var panel = pilot_roll_panel_scene.instantiate()
+	roll_panel_container.add_child(panel)
+
+	# Center the panel
+	var panel_x = (viewport_size.x - panel_size.x) / 2.0
+	var panel_y = viewport_size.y - panel_size.y - bottom_margin
+
+	panel.position = Vector2(panel_x, panel_y)
+
+	# Setup panel data
+	if event.roll_results.size() > 0:
+		# Show roll results
+		var roll_result = event.roll_results[0]
+		var movement = 0  # Pit stops don't have normal movement
+		panel.setup_roll_display(pilot, event.sector, roll_result, movement, event.event_type, -1, event.metadata)
+	else:
+		# Waiting for rolls - show pilot and sector info
+		panel.setup_pre_roll_display(pilot, event.sector, event.event_type, -1)
 
 ## Call this from the main scene to link the circuit display
 func set_circuit_display(display: CircuitDisplay):
