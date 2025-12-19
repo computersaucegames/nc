@@ -8,8 +8,8 @@
 script = ExtResource("2")
 pilot_name = "Buoy"
 pilot_bio = "A fearless racer known for aggressive overtaking. Once he locks onto your tail, he's relentless - earning him the nickname 'The Intimidator'."
-TWITCH = 7
-CRAFT = 5
-SYNC = 6
-EDGE = 8
+TWITCH = 3
+CRAFT = 3
+SYNC = 3
+EDGE = 3
 equipped_badges = Array[ExtResource("1")]([ExtResource("3")])

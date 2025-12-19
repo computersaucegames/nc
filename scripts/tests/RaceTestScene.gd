@@ -121,11 +121,11 @@ func setup_race_simulator():
 
 func setup_test_pilots():
 	var test_pilots = [
-		{"name": "Buoy", "twitch": 7, "craft": 5, "sync": 6, "edge": 8, "headshot": "res://resources/art/buoy.png"},
-		{"name": "Cowboy", "twitch": 6, "craft": 7, "sync": 5, "edge": 6, "headshot": "res://resources/art/cowboy.png"},
-		{"name": "Redman", "twitch": 8, "craft": 6, "sync": 7, "edge": 5, "headshot": "res://resources/art/redman.png"},
-		{"name": "Stubble", "twitch": 5, "craft": 8, "sync": 6, "edge": 7, "headshot": "res://resources/art/stubble.png"},
-		{"name": "Poshpaul", "twitch": 6, "craft": 6, "sync": 8, "edge": 6, "headshot": "res://resources/art/poshpaul.png"}
+		{"name": "Buoy", "twitch": 3, "craft": 3, "sync": 3, "edge": 3, "headshot": "res://resources/art/buoy.png"},
+		{"name": "Cowboy", "twitch": 2, "craft": 2, "sync": 2, "edge": 2, "headshot": "res://resources/art/cowboy.png"},
+		{"name": "Redman", "twitch": 2, "craft": 2, "sync": 2, "edge": 2, "headshot": "res://resources/art/redman.png"},
+		{"name": "Stubble", "twitch": 1, "craft": 1, "sync": 1, "edge": 4, "headshot": "res://resources/art/stubble.png"},
+		{"name": "Poshpaul", "twitch": 1, "craft": 1, "sync": 1, "edge": 1, "headshot": "res://resources/art/poshpaul.png"}
 	]
 
 	# CHANGED: Use PilotStatusPanel to setup pilots

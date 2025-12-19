@@ -8,8 +8,8 @@
 script = ExtResource("2")
 pilot_name = "Cowboy"
 pilot_bio = "Master of the race start. His lightning-fast reflexes off the line have earned him countless positions in the first corner. Never underestimate his opening lap."
-TWITCH = 6
-CRAFT = 7
-SYNC = 5
-EDGE = 6
+TWITCH = 2
+CRAFT = 2
+SYNC = 2
+EDGE = 2
 equipped_badges = Array[ExtResource("1")]([ExtResource("3")])
