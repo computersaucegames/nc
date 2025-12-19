@@ -7,8 +7,8 @@
 script = ExtResource("2")
 pilot_name = "Poshpaul"
 pilot_bio = "The team's sync specialist with an uncanny ability to bond with any fin. His neural connection scores are off the charts, making him adaptable to any racing condition."
-TWITCH = 6
-CRAFT = 6
-SYNC = 8
-EDGE = 6
+TWITCH = 1
+CRAFT = 1
+SYNC = 1
+EDGE = 1
 equipped_badges = Array[ExtResource("1")]([])
