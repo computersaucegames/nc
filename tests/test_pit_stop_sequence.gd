@@ -75,7 +75,7 @@ func test_pit_stop_decision_logic():
 	assert(not should_pit, "Should not pit when no badges to clear")
 
 	# Test 4: On pit entry sector with badges - should pit
-	var rattled_badge = load("res://resources/badges/rattled.tres") as Badge
+	var rattled_badge = load("res://resources/badges/negative/rattled.tres") as Badge
 	pilot_state.fin_state.add_temporary_badge(rattled_badge)
 	should_pit = round_proc._should_pilot_pit(pilot_state, circuit)
 	assert(should_pit, "Should pit when on entry sector with badges")
@@ -109,10 +109,10 @@ func test_badge_clearing_normal():
 
 	# Setup pilot with normal badges
 	pilot_state.fin_state.temporary_badges.clear()
-	var rattled = load("res://resources/badges/rattled.tres") as Badge
-	var sluggish = load("res://resources/badges/sluggish.tres") as Badge
+	var rattled = load("res://resources/badges/negative/rattled.tres") as Badge
+	var lost_focus = load("res://resources/badges/negative/lost_focus.tres") as Badge
 	pilot_state.fin_state.add_temporary_badge(rattled)
-	pilot_state.fin_state.add_temporary_badge(sluggish)
+	pilot_state.fin_state.add_temporary_badge(lost_focus)
 
 	assert(pilot_state.fin_state.temporary_badges.size() == 2, "Should have 2 badges before pit")
 
@@ -134,7 +134,7 @@ func test_badge_clearing_severe():
 
 	# Setup pilot with severe badge
 	pilot_state.fin_state.temporary_badges.clear()
-	var rattled_severe = load("res://resources/badges/rattled_severe.tres") as Badge
+	var rattled_severe = load("res://resources/badges/negative/rattled_severe.tres") as Badge
 	pilot_state.fin_state.add_temporary_badge(rattled_severe)
 
 	# Test 1: GREEN roll should NOT clear severe badges
