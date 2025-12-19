@@ -44,10 +44,8 @@ func setup_test_environment():
 	pilot_state.edge = 6
 
 	# Setup fin with badges
-	var fin = Fin.new()
-	fin.fin_name = "Test Fin"
-	fin.SPEED = 5
-	fin.HANDLING = 5
+	var fin = load("res://resources/fins/scalpel.tres") as Fin
+	assert(fin != null, "Should load fin resource")
 	pilot_state.setup_fin(fin)
 
 	# Setup mechanic
