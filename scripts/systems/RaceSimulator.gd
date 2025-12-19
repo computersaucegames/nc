@@ -368,8 +368,9 @@ func process_w2w_focus_mode(pilot1: PilotState, pilot2: PilotState):
 func process_pit_stop_focus_mode(pilot: PilotState):
 	# RoundProcessor already marked pilot as processed
 
-	# Get the current sector
-	var sector = current_circuit.sectors[pilot.current_sector]
+	# Get the pit entry sector (first pit lane sector)
+	# Don't use pilot.current_sector as that's the sector they're about to skip
+	var sector = current_circuit.pit_lane_sectors[0]  # Pit Entry sector
 
 	# Emit focus mode trigger event
 	focus_mode_triggered.emit([pilot], "Pit Stop - %s" % pilot.name)
