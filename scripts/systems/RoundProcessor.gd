@@ -220,9 +220,9 @@ func _should_pilot_pit(pilot: PilotState, circuit: Circuit) -> bool:
 	if not circuit.has_pit_lane:
 		return false
 
-	# 2. Check if pilot is on a sector that allows pit entry
-	var current_sector = circuit.sectors[pilot.current_sector]
-	if not current_sector.pit_entry_available:
+	# 2. Check if pilot just completed the pit entry sector
+	# Pilot can only pit AFTER completing the designated sector, not before
+	if pilot.current_sector != circuit.pit_entry_after_sector + 1:
 		return false
 
 	# 3. Check if pilot already pitted this lap (prevent multiple pits per lap)

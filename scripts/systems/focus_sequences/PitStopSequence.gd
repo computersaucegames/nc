@@ -71,7 +71,8 @@ func _execute_pit_entry(result: StageResult):
 		return
 
 	# Mark pilot as entering pit lane
-	var entry_sector_index = pilot.current_sector
+	# Entry sector is the one they just completed (pit_entry_after_sector)
+	var entry_sector_index = circuit.pit_entry_after_sector
 	pilot.enter_pit_lane(entry_sector_index)
 
 	# Emit signal
