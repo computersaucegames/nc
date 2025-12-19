@@ -81,6 +81,8 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 		sector_text = "Race Start - " + sector_text
 	elif event_type == 5:  # RED_RESULT (Failure Table)
 		sector_text = "Failure Table - " + sector_text
+	elif event_type == 6:  # PIT_STOP
+		sector_text = "Pit Stop - " + sector_text
 	sector_label.text = sector_text
 
 	# Show pilot current stats with tied position if in W2W mode
@@ -138,6 +140,8 @@ func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult,
 		sector_text = "Race Start - " + sector_text
 	elif event_type == 5:  # RED_RESULT (Failure Table)
 		sector_text = "Failure Table - " + sector_text
+	elif event_type == 6:  # PIT_STOP
+		sector_text = "Pit Stop - " + sector_text
 	sector_label.text = sector_text
 
 	# Show pilot info with tied position if in W2W mode
