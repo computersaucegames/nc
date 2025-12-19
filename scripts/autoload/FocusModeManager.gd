@@ -20,7 +20,8 @@ enum EventType {
 	RACE_START,
 	FINAL_LAP,
 	PHOTO_FINISH,
-	RED_RESULT  # Failure table roll
+	RED_RESULT,  # Failure table roll
+	PIT_STOP     # Pit stop sequence
 }
 
 # Focus Mode Event data structure
@@ -111,4 +112,13 @@ func create_red_result_event(pilot, sector, initial_roll_result) -> FocusModeEve
 	event.sector = sector
 	event.metadata["position_context"] = "Failure Table"
 	event.metadata["initial_roll"] = initial_roll_result  # The red roll that triggered this
+	return event
+
+# Helper to create pit stop event
+func create_pit_stop_event(pilot, sector, circuit) -> FocusModeEvent:
+	var event = FocusModeEvent.new(EventType.PIT_STOP)
+	event.pilots = [pilot]
+	event.sector = sector
+	event.metadata["position_context"] = "Pit Stop"
+	event.metadata["circuit"] = circuit
 	return event

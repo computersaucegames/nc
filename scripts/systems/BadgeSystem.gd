@@ -290,6 +290,55 @@ static func reset_fin_badge_states(fin_state: FinState) -> void:
 		return
 	fin_state.badge_states.clear()
 
+## Get active modifiers from mechanic badges
+static func get_active_modifiers_for_mechanic(mechanic_state: MechanicState, context: Dictionary) -> Array:
+	var modifiers = []
+
+	if mechanic_state == null:
+		return modifiers
+
+	# Get all badges (temporary only for now - mechanics don't have equipped badges yet)
+	var all_badges = mechanic_state.temporary_badges
+	if all_badges.is_empty():
+		return modifiers
+
+	# Check each badge to see if it should activate
+	for badge in all_badges:
+		if badge == null:
+			continue
+
+		# For mechanic badges, we need to pass the pilot_state from context
+		var pilot_state = context.get("pilot", null)
+		if pilot_state == null:
+			continue
+
+		if badge.should_activate(pilot_state, context):
+			var modifier = badge.create_modifier()
+			modifiers.append(modifier)
+
+	return modifiers
+
+## Update badge states for a mechanic
+static func update_mechanic_badge_states(mechanic_state: MechanicState, pilot_state) -> void:
+	if mechanic_state == null:
+		return
+
+	var all_badges = mechanic_state.temporary_badges
+	if all_badges.is_empty():
+		return
+
+	# Update each badge's state tracking
+	for badge in all_badges:
+		if badge == null:
+			continue
+		badge.update_state(pilot_state)
+
+## Reset badge states for a mechanic (e.g., at race start)
+static func reset_mechanic_badge_states(mechanic_state: MechanicState) -> void:
+	if mechanic_state == null:
+		return
+	mechanic_state.badge_states.clear()
+
 ## Track sector completion for fin badge earning
 static func track_fin_sector_completion(fin_state: FinState, sector: Sector, roll_result: Dice.DiceResult) -> void:
 	if fin_state == null:
