@@ -229,19 +229,18 @@ func _should_pilot_pit(pilot: PilotState, circuit: Circuit) -> bool:
 	# TODO: Track last pit lap to prevent multiple pits per lap
 
 	# 4. Strategic decision: Does pilot NEED to pit?
-	# For now, automatically pit if fin has NEGATIVE badges (penalties)
-	if pilot.fin_state != null:
-		# Count negative badges (those that penalize the pilot)
-		var has_negative_badges = false
-		for badge in pilot.fin_state.temporary_badges:
-			# Check if badge has negative effects (modifier value < 0)
-			# Negative badges are penalties that need clearing
-			if badge.modifier_value < 0:
-				has_negative_badges = true
-				break
+	# Automatically pit if pilot OR fin has NEGATIVE badges (penalties)
 
-		if has_negative_badges:
+	# Check pilot badges
+	for badge in pilot.temporary_badges:
+		if badge.modifier_value < 0:
 			return true
+
+	# Check fin badges
+	if pilot.fin_state != null:
+		for badge in pilot.fin_state.temporary_badges:
+			if badge.modifier_value < 0:
+				return true
 
 	# 5. Future: Check fuel, tire wear, position safety, etc.
 
