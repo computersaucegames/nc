@@ -137,7 +137,8 @@ func _execute_pit_box(result: StageResult):
 	if badges_cleared.size() > 0:
 		race_sim.pit_badges_cleared.emit(pilot, badges_cleared)
 
-	# Update focus event with roll result
+	# Update focus event with roll result AND sector (critical for UI display!)
+	focus_event.sector = pit_box_sector
 	focus_event.roll_results = [roll]
 	focus_event.metadata["box_penalty"] = time_penalty
 	focus_event.metadata["badges_cleared"] = badges_cleared
@@ -174,7 +175,8 @@ func _execute_pit_exit(result: StageResult):
 	if time_penalty > 0:
 		race_sim.pit_exit_penalty.emit(pilot, time_penalty)
 
-	# Update focus event with roll result
+	# Update focus event with roll result AND sector (critical for UI display!)
+	focus_event.sector = pit_exit_sector
 	focus_event.roll_results = [roll]
 	focus_event.metadata["exit_penalty"] = time_penalty
 	FocusMode.focus_mode_activated.emit(focus_event)
