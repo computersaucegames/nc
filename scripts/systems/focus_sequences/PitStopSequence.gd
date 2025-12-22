@@ -230,7 +230,13 @@ func _make_mechanic_roll(pilot_state: PilotState, sector: Sector, mechanic_stat:
 
 	# Get roll context
 	var check_name = "%s - %s" % [sector.sector_name, mechanic_stat.to_upper()]
-	var gates = sector.gates
+
+	# Build gates dictionary from sector thresholds
+	var gates = {
+		"grey": sector.grey_threshold,
+		"green": sector.green_threshold,
+		"purple": sector.purple_threshold
+	}
 
 	# Get modifiers (mechanic badges if any)
 	var modifiers = []
