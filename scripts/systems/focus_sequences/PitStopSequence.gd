@@ -207,9 +207,11 @@ func _execute_rejoin(result: StageResult):
 	var rejoin_sector = circuit.pit_exit_rejoin_sector
 	pilot.exit_pit_lane(rejoin_sector)
 
-	# Pit stop cost: Pilot stays stationary (doesn't gain distance)
-	# The "total_penalty" represents time lost while other pilots continue racing
-	# DO NOT add to total_distance - pilot loses ground by not moving forward
+	# Update pilot's total distance
+	# Pit lane is LONGER than the main track sectors it bypasses
+	# total_penalty = pit lane sector lengths (2+3+2=7) + roll penalties (0-2 per stage)
+	# Pilot travels this distance while other pilots use shorter main track path
+	pilot.total_distance += total_penalty
 
 	# Emit completion signal
 	race_sim.pit_stop_completed.emit(pilot, total_penalty, context.get("badges_cleared", []))

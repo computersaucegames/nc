@@ -234,7 +234,17 @@ func _on_pilot_rolling(pilot, sector):
 		status = "Defending"
 
 	# Sector progress
-	var sector_progress = "Sector %d: %d/%d" % [pilot.current_sector + 1, pilot.gap_in_sector, sector.length_in_gap]
+	var sector_progress = ""
+	if pilot.is_in_pit_lane:
+		# For pit lane, show pit stage name instead of sector number
+		var stage_names = ["Entry", "Box", "Exit"]
+		if pilot.pit_lane_stage >= 0 and pilot.pit_lane_stage < stage_names.size():
+			sector_progress = "%s: 0/%d" % [stage_names[pilot.pit_lane_stage], sector.length_in_gap]
+		else:
+			sector_progress = "Pit: 0/%d" % sector.length_in_gap
+	else:
+		# Normal sector display
+		sector_progress = "Sector %d: %d/%d" % [pilot.current_sector + 1, pilot.gap_in_sector, sector.length_in_gap]
 
 	# Gap to position ahead
 	var gap_ahead = ""
