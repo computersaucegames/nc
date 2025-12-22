@@ -57,24 +57,29 @@ func _advance_focus_mode():
 	focus_mode_manager.advance()
 
 func _on_focus_mode_activated(event: FocusModeManager.FocusModeEvent):
+	print("DEBUG [FocusOverlay]: _on_focus_mode_activated called, event_type: %d" % event.event_type)
 	current_event = event
 
 	# Determine stage based on whether rolls have been made
 	if event.roll_results.size() == 0:
 		current_stage = DisplayStage.SHOWING_ROLLS
 		continue_prompt.text = "Click or press SPACE to roll"
+		print("DEBUG [FocusOverlay]: Stage = SHOWING_ROLLS")
 	else:
 		current_stage = DisplayStage.SHOWING_OUTCOMES
 		continue_prompt.text = "Click or press SPACE to continue race"
+		print("DEBUG [FocusOverlay]: Stage = SHOWING_OUTCOMES, rolls: %d" % event.roll_results.size())
 
 	# Clear previous panels
 	_clear_panels()
 
 	# Create panels for each pilot
+	print("DEBUG [FocusOverlay]: Creating pilot panels for %d pilots" % event.pilots.size())
 	_create_pilot_panels(event)
 
 	# Show the overlay
 	visible = true
+	print("DEBUG [FocusOverlay]: Overlay now visible")
 
 func _on_focus_mode_deactivated():
 	visible = false
@@ -167,30 +172,39 @@ func _get_pilot_id_from_state(pilot_state: PilotState) -> int:
 
 ## Create a centered panel for pit stop events
 func _create_pit_stop_panel(event: FocusModeManager.FocusModeEvent, viewport_size: Vector2, panel_size: Vector2, bottom_margin: float):
+	print("DEBUG [FocusOverlay]: _create_pit_stop_panel called")
 	if event.pilots.size() == 0:
+		print("DEBUG [FocusOverlay]: ERROR - No pilots in event!")
 		return
 
 	var pilot = event.pilots[0]
+	print("DEBUG [FocusOverlay]: Pilot: %s, Sector: %s" % [pilot.name, event.sector.sector_name if event.sector else "NULL"])
 
 	# Create panel for pit stop
 	var panel = pilot_roll_panel_scene.instantiate()
 	roll_panel_container.add_child(panel)
+	print("DEBUG [FocusOverlay]: Panel instantiated and added to container")
 
 	# Center the panel
 	var panel_x = (viewport_size.x - panel_size.x) / 2.0
 	var panel_y = viewport_size.y - panel_size.y - bottom_margin
 
 	panel.position = Vector2(panel_x, panel_y)
+	print("DEBUG [FocusOverlay]: Panel positioned at (%f, %f)" % [panel_x, panel_y])
 
 	# Setup panel data
 	if event.roll_results.size() > 0:
 		# Show roll results
+		print("DEBUG [FocusOverlay]: Setting up roll display (has results)")
 		var roll_result = event.roll_results[0]
 		var movement = 0  # Pit stops don't have normal movement
 		panel.setup_roll_display(pilot, event.sector, roll_result, movement, event.event_type, -1, event.metadata)
 	else:
 		# Waiting for rolls - show pilot and sector info
+		print("DEBUG [FocusOverlay]: Setting up pre-roll display (no results yet)")
 		panel.setup_pre_roll_display(pilot, event.sector, event.event_type, -1)
+
+	print("DEBUG [FocusOverlay]: Panel setup complete")
 
 ## Call this from the main scene to link the circuit display
 func set_circuit_display(display: CircuitDisplay):
