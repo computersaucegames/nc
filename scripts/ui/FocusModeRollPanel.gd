@@ -55,8 +55,6 @@ func _ready():
 
 ## Setup display before roll is made
 func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tied_position: int = -1):
-	print("DEBUG [RollPanel]: setup_pre_roll_display - pilot: %s, sector: %s, event_type: %d" % [pilot.name, sector.sector_name if sector else "NULL", event_type])
-
 	# Load and display headshot
 	if headshot_texture and pilot.headshot != "":
 		headshot_texture.texture = load(pilot.headshot)
@@ -65,14 +63,12 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 		headshot_texture.visible = false
 
 	pilot_name_label.text = pilot.name
-	print("DEBUG [RollPanel]: Set pilot name: %s" % pilot.name)
 
 	# Add context to sector label based on event type
 	# For failure tables, use the failure_table_check_type instead of normal check_type
 	var check_type = sector.failure_table_check_type if event_type == 5 else sector.check_type
 	var check_type_str = _get_check_type_string(check_type)
 	var sector_text = "Sector: %s (%s)" % [sector.sector_name, check_type_str.to_upper()]
-	print("DEBUG [RollPanel]: Sector text: %s, check_type: %d" % [sector_text, check_type])
 
 	# Add sector tags if present
 	if not sector.sector_tags.is_empty():
@@ -114,12 +110,8 @@ func setup_pre_roll_display(pilot: PilotState, sector, event_type: int = -1, tie
 	movement_result.visible = false
 	resolution_label.visible = false
 
-	print("DEBUG [RollPanel]: setup_pre_roll_display complete")
-
 ## Setup display with roll results
 func setup_roll_display(pilot: PilotState, sector, roll_result: Dice.DiceResult, movement: int, event_type: int = -1, tied_position: int = -1, event_metadata: Dictionary = {}):
-	print("DEBUG: Setting up roll display for %s - tier: %s, movement: %d" % [pilot.name, roll_result.tier_name, movement])
-
 	# Load and display headshot
 	if headshot_texture and pilot.headshot != "":
 		headshot_texture.texture = load(pilot.headshot)

@@ -366,25 +366,20 @@ func process_w2w_focus_mode(pilot1: PilotState, pilot2: PilotState):
 
 # Process pit stop in Focus Mode
 func process_pit_stop_focus_mode(pilot: PilotState):
-	print("DEBUG [RaceSim]: Entering pit stop focus mode for %s" % pilot.name)
-
 	# RoundProcessor already marked pilot as processed
 
 	# Get the pit entry sector (first pit lane sector)
 	# Don't use pilot.current_sector as that's the sector they're about to skip
 	var sector = current_circuit.pit_lane_sectors[0]  # Pit Entry sector
-	print("DEBUG [RaceSim]: Pit entry sector: %s, check_type: %d" % [sector.sector_name, sector.check_type])
 
 	# Emit focus mode trigger event
 	focus_mode_triggered.emit([pilot], "Pit Stop - %s" % pilot.name)
 
 	# Create Focus Mode event for pit stop
 	var event = FocusMode.create_pit_stop_event(pilot, sector, current_circuit)
-	print("DEBUG [RaceSim]: Created pit stop event, event_type: %d, pilots: %d" % [event.event_type, event.pilots.size()])
 
 	# Create sequence
 	current_focus_sequence = PitStopSequence.new(event, self)
-	print("DEBUG [RaceSim]: Created PitStopSequence")
 
 	# Enter Focus Mode state
 	race_mode = RaceMode.FOCUS_MODE
@@ -393,11 +388,9 @@ func process_pit_stop_focus_mode(pilot: PilotState):
 	current_focus_advance_callback = func():
 		_advance_focus_sequence()
 	FocusMode.focus_mode_advance_requested.connect(current_focus_advance_callback)
-	print("DEBUG [RaceSim]: Connected advance callback")
 
 	# Activate Focus Mode (UI will display)
 	FocusMode.activate(event)
-	print("DEBUG [RaceSim]: FocusMode.activate() called")
 
 # Process red result in Focus Mode (failure table)
 func process_red_result_focus_mode(pilot: PilotState, sector: Sector, initial_roll: Dice.DiceResult):
