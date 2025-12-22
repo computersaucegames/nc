@@ -75,6 +75,10 @@ func _execute_pit_entry(result: StageResult):
 	var entry_sector_index = circuit.pit_entry_after_sector
 	pilot.enter_pit_lane(entry_sector_index)
 
+	# Update sector display to show pilot in pit lane entry
+	# Note: This is for display only - pit lane sectors aren't in the main sectors array
+	focus_event.sector = pit_entry_sector
+
 	# Emit signal
 	race_sim.pit_entry_started.emit(pilot, pit_entry_sector)
 
@@ -203,8 +207,9 @@ func _execute_rejoin(result: StageResult):
 	var rejoin_sector = circuit.pit_exit_rejoin_sector
 	pilot.exit_pit_lane(rejoin_sector)
 
-	# Update pilot's total distance (this affects position)
-	pilot.total_distance += total_penalty
+	# Pit stop cost: Pilot stays stationary (doesn't gain distance)
+	# The "total_penalty" represents time lost while other pilots continue racing
+	# DO NOT add to total_distance - pilot loses ground by not moving forward
 
 	# Emit completion signal
 	race_sim.pit_stop_completed.emit(pilot, total_penalty, context.get("badges_cleared", []))
