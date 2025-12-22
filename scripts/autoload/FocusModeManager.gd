@@ -78,6 +78,8 @@ func should_trigger(event: FocusModeEvent) -> bool:
 			return config.enable_photo_finish
 		EventType.RED_RESULT:
 			return config.enable_red_result
+		EventType.PIT_STOP:
+			return true  # Pit stops are always enabled
 
 	return false
 
